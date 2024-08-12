@@ -37,7 +37,17 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Keyboard } from 'react-native';
-import { AlertTriangle, EyeIcon, EyeOffIcon } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import {
+  AlertTriangle,
+  EyeIcon,
+  EyeOffIcon,
+  Import,
+} from 'lucide-react-native';
+
+//firebase imports
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'; // Import Firebase functions
+import { FIREBASE_AUTH } from './firebaseConfig'; // Import Firebase Auth
 
 import { GoogleIcon, FacebookIcon } from './assets/Icons/Social';
 
@@ -54,6 +64,7 @@ const StyledImage = styled(Image, {
     },
   },
 });
+
 
 const signInSchema = z.object({
   email: z.string().min(1, 'Email is required').email(),
@@ -85,7 +96,7 @@ const SignInForm = () => {
 
   const toast = useToast();
 
-  const onSubmit = (_data: SignInSchemaType) => {
+  /* const onSubmit = (_data: SignInSchemaType) => {
     toast.show({
       placement: 'bottom right',
       render: ({ id }) => {
@@ -98,6 +109,43 @@ const SignInForm = () => {
     });
     reset();
     // Implement your own onSubmit and navigation logic here.
+  }; */
+
+  // Inside SignInForm component
+  const router = useRouter();
+
+  const onSubmit = async (data: SignInSchemaType) => {
+    try {
+      // Initialize Firebase Auth
+      await signInWithEmailAndPassword(
+        FIREBASE_AUTH,
+        data.email,
+        data.password
+      );
+      toast.show({
+        placement: 'bottom right',
+        render: ({ id }) => {
+          return (
+            <Toast nativeID={id} variant="accent" action="success">
+              <ToastTitle>Signed in successfully</ToastTitle>
+            </Toast>
+          );
+        },
+      });
+      reset();
+      router.replace('/Home'); // Redirect to /home and replace current route
+    } catch (error: any) {
+      toast.show({
+        placement: 'bottom right',
+        render: ({ id }) => {
+          return (
+            <Toast nativeID={id} variant="accent" action="error">
+              <ToastTitle>{error.message}</ToastTitle>
+            </Toast>
+          );
+        },
+      });
+    }
   };
 
   const handleKeyPress = () => {

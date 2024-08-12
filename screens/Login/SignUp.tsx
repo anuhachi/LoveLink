@@ -40,6 +40,9 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Keyboard } from 'react-native';
 
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'; // Import Firebase functions
+import { FIREBASE_AUTH } from './firebaseConfig'; // Import Firebase Auth
+
 import { FacebookIcon, GoogleIcon } from './assets/Icons/Social';
 
 import GuestLayout from '../../layouts/GuestLayout';
@@ -160,20 +163,40 @@ const SignUpForm = () => {
   const [pwMatched, setPwMatched] = useState(false);
   const toast = useToast();
 
-  const onSubmit = (_data: SignUpSchemaType) => {
+  const onSubmit = async (_data: SignUpSchemaType) => {
     if (_data.password === _data.confirmpassword) {
-      setPwMatched(true);
-      toast.show({
-        placement: 'bottom right',
-        render: ({ id }) => {
-          return (
-            <Toast nativeID={id} variant="accent" action="success">
-              <ToastTitle>Signed up successfully</ToastTitle>
-            </Toast>
-          );
-        },
-      });
-      reset();
+      try {
+        // Initialize Firebase Auth
+        await createUserWithEmailAndPassword(
+          FIREBASE_AUTH,
+          _data.email,
+          _data.password
+        );
+        setPwMatched(true);
+        toast.show({
+          placement: 'bottom right',
+          render: ({ id }) => {
+            return (
+              <Toast nativeID={id} variant="accent" action="success">
+                <ToastTitle>Signed up successfully</ToastTitle>
+              </Toast>
+            );
+          },
+        });
+        reset();
+        router.replace('/login'); // Redirect to login page
+      } catch (error: any) {
+        toast.show({
+          placement: 'bottom right',
+          render: ({ id }) => {
+            return (
+              <Toast nativeID={id} action="error">
+                <ToastTitle>{error.message}</ToastTitle>
+              </Toast>
+            );
+          },
+        });
+      }
     } else {
       toast.show({
         placement: 'bottom right',
@@ -186,9 +209,6 @@ const SignUpForm = () => {
         },
       });
     }
-    // Implement your own onSubmit and navigation logic here.
-    // Navigate to appropriate location
-    router.replace('/login');
   };
 
   const handleKeyPress = () => {

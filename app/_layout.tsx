@@ -6,8 +6,13 @@ import {
 } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { SplashScreen, Stack } from 'expo-router';
-import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
+
+import { useState, useEffect } from 'react';
+
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { FIREBASE_AUTH } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+
 
 import { config } from '../gluestack-ui.config';
 import { GluestackUIProvider } from '@gluestack-ui/themed';
@@ -54,7 +59,8 @@ function RootLayoutNav() {
 
   return (
     <GluestackUIProvider config={config}>
-      <Stack>
+      <Stack initialRouteName= "login" >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="signup" options={{ headerShown: false }} />
