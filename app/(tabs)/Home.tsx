@@ -1,3 +1,5 @@
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Button, ScrollView } from 'react-native';
 import {
   Avatar,
   AvatarBadge,
@@ -8,25 +10,28 @@ import {
   Box,
   Text,
   View,
+  Fab,
+  FabIcon,
+  FabLabel,
+  Input,
+  InputField,
+  InputIcon,
+  InputSlot,
 } from '@gluestack-ui/themed';
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Button } from 'react-native';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import UserProfile from '../../components/Header/UserProfile';
 import UsersNearYou from '../../components/UsersNearYou';
 import { FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
-import { ScrollView } from 'react-native';
-import { Input, InputField, InputIcon, InputSlot } from '@gluestack-ui/themed';
 import Sidebar from '../../components/Sidebar';
 import HeaderTabs from '../../components/Header/HeaderTabs';
 import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
 import NewLikesSection from '../../components/NewLikesSection';
 import MainContentHeader from '../../components/MainContentHeader';
-
-const [selectedTab, setSelectedTab] = React.useState('Explore');
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 export default function Tab({ activeTab, setActiveTab }: any) {
+  const [selectedTab, setSelectedTab] = useState('Explore');
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -45,28 +50,9 @@ export default function Tab({ activeTab, setActiveTab }: any) {
     });
   };
 
-  /* return (
-    <View style={styles.container}>
-      {user ? (
-        <>
-          <Text>Welcome, {user.email}</Text>
-          <Button title="Logout" onPress={handleLogout} />
-        </>
-      ) : (
-        <Text>No user is logged in</Text>
-      )}
-    </View>
-  );
-*/
-
   return (
     <>
-      <Box
-        w="100%"
-        sx={{
-          display: 'flex',
-        }}
-      >
+      <Box w="100%" sx={{ display: 'flex' }}>
         {/* header */}
         <Box>
           {/* big screen */}
@@ -89,7 +75,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
               mx="auto"
               w="100%"
             >
-              {/* logo and hedear here */}
+              {/* logo and header here */}
               <LoveLinkLogo />
               <HeaderTabs
                 setSelectedTab={setSelectedTab}
@@ -102,36 +88,45 @@ export default function Tab({ activeTab, setActiveTab }: any) {
             </HStack>
           </Box>
           {/* small screen */}
-          <Box
-            p="$5"
-            sx={{
-              '@md': {
-                display: 'none',
-              },
-            }}
-            w="100%"
-          >
-            <Input variant="rounded" size="sm" w="100%">
-              <InputField placeholder="Anywhere • Any week • Add guests" />
-              <InputSlot
-                bg="$primary500"
-                borderRadius="$full"
-                h="$6"
-                w="$6"
-                m="$1.5"
-              >
-                <InputIcon
-                  as={FontAwesome}
-                  name="search"
-                  color="white"
-                  size={20}
-                />
-              </InputSlot>
-            </Input>
-          </Box>
+          {/* <Box
+                      p="$5"
+                      sx={{
+                        '@md': {
+                          display: 'none',
+                        },
+                      }}
+                      w="100%"
+                    >
+                      <Input variant="rounded" size="sm" w="100%">
+                        <InputField placeholder="Anywhere • Any week • Add guests" />
+                        <InputSlot
+                          bg="$primary500"
+                          borderRadius="$full"
+                          h="$6"
+                          w="$6"
+                          m="$1.5"
+                        >
+                          <InputIcon
+                            as={FontAwesome}
+                            name="search"
+                            color="white"
+                            size={20}
+                          />
+                        </InputSlot>
+                      </Input>
+                    </Box> */}
         </Box>
       </Box>
-
+      <Fab
+        bg="$indigo600"
+        height="$9"
+        position="absolute"
+        bottom="$4"
+        right="$4"
+      >
+        <AntDesign name="enviromento" size={24} color="white" />
+        <FabLabel> Go to Map</FabLabel>
+      </Fab>
       <ScrollView>
         <Box
           sx={{

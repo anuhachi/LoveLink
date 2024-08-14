@@ -1,9 +1,10 @@
 import React from 'react';
 import { SearchIcon } from '@gluestack-ui/themed';
 import { HStack, Icon, Pressable, Text } from '@gluestack-ui/themed';
+import { useRouter } from 'expo-router';
 
-const HeaderTabs = () => {
-  const [selectedTab, setSelectedTab] = React.useState('Explore');
+const HeaderTabs = ({ selectedTab, setSelectedTab }) => {
+  const router = useRouter();
   return (
     <HStack h="$20" alignItems="center" justifyContent="space-between">
       <HStack
@@ -16,9 +17,7 @@ const HeaderTabs = () => {
       >
         <Pressable
           rounded="$full"
-          bg={
-            selectedTab === 'Explore' ? '$backgroundLight100' : 'transparent'
-          }
+          bg={selectedTab === 'Explore' ? '$backgroundLight300' : 'transparent'}
           sx={{
             _dark: {
               bg:
@@ -42,19 +41,20 @@ const HeaderTabs = () => {
           rounded="$full"
           px="$3"
           py="$1.5"
-          bg={selectedTab === 'Map' ? '$backgroundLight100' : 'transparent'}
+          bg={selectedTab === 'Match' ? '$backgroundLight300' : 'transparent'}
           sx={{
             _dark: {
               bg:
-                selectedTab === 'Map'
-                  ? '$backgroundDark700'
-                  : 'transparent',
+                selectedTab === 'Match' ? '$backgroundDark700' : 'transparent',
             },
           }}
-          onPress={() => setSelectedTab('Map')}
+          onPress={() => {
+            setSelectedTab('Match');
+            router.push('/Match');
+          }}
         >
           <Text size="sm" fontWeight="$medium">
-            Map
+            Match
           </Text>
         </Pressable>
         <Pressable
@@ -62,7 +62,7 @@ const HeaderTabs = () => {
           px="$3"
           py="$1.5"
           bg={
-            selectedTab === 'Near You' ? '$backgroundLight100' : 'transparent'
+            selectedTab === 'Near You' ? '$backgroundLight300' : 'transparent'
           }
           sx={{
             _dark: {
@@ -85,4 +85,5 @@ const HeaderTabs = () => {
     </HStack>
   );
 };
+
 export default HeaderTabs;

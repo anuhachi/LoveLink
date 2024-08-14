@@ -12,6 +12,7 @@ import GuestLayout from '../../layouts/GuestLayout';
 import StyledExpoRouterLink from '../../components/StyledExpoRouterLink';
 
 import { styled } from '@gluestack-style/react';
+import { useRouter } from 'expo-router';
 
 const StyledImage = styled(Image, {
   '@sm': {
@@ -34,6 +35,8 @@ const StyledImage = styled(Image, {
 
 // to render login and sign up buttons
 function ActionButtons() {
+  const router = useRouter();
+
   return (
     <VStack
       space="xs"
@@ -56,18 +59,16 @@ function ActionButtons() {
         isDisabled={false}
         isFocusVisible={false}
         backgroundColor="$backgroundLight0"
+        onPress={() => router.push('/login')}
       >
-        <StyledExpoRouterLink href="/login">
-          <ButtonText
-            fontWeight="$bold"
-            textDecorationLine="none"
-            color="$primary500"
-          >
-            LOGIN
-          </ButtonText>
-        </StyledExpoRouterLink>
+        <ButtonText
+          fontWeight="$bold"
+          textDecorationLine="none"
+          color="$primary500"
+        >
+          LOGIN
+        </ButtonText>
       </Button>
-
       <Button
         sx={{
           ':hover': {
@@ -84,12 +85,11 @@ function ActionButtons() {
         action="primary"
         isDisabled={false}
         isFocusVisible={false}
+        onPress={() => router.push('/signup')}
       >
-        <StyledExpoRouterLink href="/signup">
-          <ButtonText textDecorationLine="none" color="$textLight50">
-            SIGN UP
-          </ButtonText>
-        </StyledExpoRouterLink>
+        <ButtonText textDecorationLine="none" color="$textLight50">
+          SIGN UP
+        </ButtonText>
       </Button>
     </VStack>
   );
@@ -101,7 +101,7 @@ function HeaderLogo() {
       <StyledImage
         alt="gluestack-ui Pro"
         resizeMode="contain"
-        source={require('./assets/images/gluestackUiProLogo_web_light.svg')}
+        source={require('./assets/images/logo_loveLink_light-cropped.svg')}
         sx={{
           '@md': {
             display: 'flex',
@@ -118,7 +118,7 @@ function HeaderLogo() {
         }}
         alt="gluestack-ui Pro"
         display="flex"
-        source={require('./assets/images/gluestackUiProLogo_mobile.png')}
+        source={require('./assets/images/logo_LoveLink_mobile.png')}
       />
     </Box>
   );

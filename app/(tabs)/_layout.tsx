@@ -1,14 +1,15 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import React, { useEffect, useState } from 'react';
+import { Dimensions } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import AntDesign from '@expo/vector-icons/AntDesign';
 import { FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 
 export default function TabLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const router = useRouter();
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
@@ -24,28 +25,35 @@ export default function TabLayout() {
     return () => unsubscribe();
   }, [router]);
 
+  useEffect(() => {
+    const updateScreenSize = () => {
+      const screenWidth = Dimensions.get('window').width;
+      setIsLargeScreen(screenWidth >= 768); // Adjust this value as needed
+    };
+
+    updateScreenSize(); // Initial check
+    Dimensions.addEventListener('change', updateScreenSize); // Listen to screen size changes
+
+    return () => Dimensions.removeEventListener('change', updateScreenSize);
+  }, []);
+
   if (isAuthenticated === null) {
     return null; // Optionally show a loading spinner while checking authentication state
   }
 
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor: 'blue' }}>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: 'blue',
+        tabBarShowLabel: false,
+        tabBarStyle: isLargeScreen ? { display: 'none' } : {}, // Hide tab bar on large screens
+      }}
+    >
       <Tabs.Screen
         name="Home"
         options={{
-          title: 'Test',
           tabBarIcon: ({ color }) => (
-            <FontAwesome size={28} name="home" color={color} />
-          ),
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="Settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => (
-            <FontAwesome size={28} name="cog" color={color} />
+            <AntDesign name="search1" size={24} color={color} />
           ),
           headerShown: false,
         }}
@@ -53,20 +61,27 @@ export default function TabLayout() {
       <Tabs.Screen
         name="Chat"
         options={{
-          title: 'Chat',
           tabBarIcon: ({ color }) => (
-            <FontAwesome size={28} name="comments" color={color} />
+            <AntDesign name="message1" size={24} color={color} />
           ),
-          headerShown: false,
         }}
       />
       <Tabs.Screen
         name="Match"
         options={{
-          title: 'Match',
           tabBarIcon: ({ color }) => (
-            <FontAwesome size={28} name="fire" color={color} />
+            <AntDesign name="hearto" size={24} color={color} />
           ),
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="Settings"
+        options={{
+          tabBarIcon: ({ color }) => (
+            <AntDesign name="setting" size={24} color="black" />
+          ),
+          headerShown: false,
         }}
       />
     </Tabs>

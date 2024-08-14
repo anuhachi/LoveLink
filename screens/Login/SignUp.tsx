@@ -55,7 +55,7 @@ import { styled } from '@gluestack-style/react';
 const StyledImage = styled(Image, {
   props: {
     style: {
-      height: 40,
+      height: 90,
       width: 320,
     },
   },
@@ -100,11 +100,11 @@ function SideContainerWeb() {
       }}
     >
       <StyledImage
-        h="$10"
-        w="$80"
+        h="$40"
+        w="$320"
         alt="gluestack-ui Pro"
         resizeMode="contain"
-        source={require('./assets/images/gluestackUiProLogo_web_light.svg')}
+        source={require('./assets/images/logo_loveLink_light-cropped.svg')}
       />
     </Center>
   );

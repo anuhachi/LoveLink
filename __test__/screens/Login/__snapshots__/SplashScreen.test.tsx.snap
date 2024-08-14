@@ -157,7 +157,7 @@ exports[`Splash Screen 1`] = `
                 }
               >
                 <Image
-                  accessibilityLabel="gluestack-ui Pro"
+                  aria-label="gluestack-ui Pro"
                   accessibilityRole="image"
                   alt="gluestack-ui Pro"
                   data-style=""
@@ -189,7 +189,7 @@ exports[`Splash Screen 1`] = `
                   }
                 />
                 <Image
-                  accessibilityLabel="gluestack-ui Pro"
+                  aria-label="gluestack-ui Pro"
                   accessibilityRole="image"
                   alt="gluestack-ui Pro"
                   data-style=""

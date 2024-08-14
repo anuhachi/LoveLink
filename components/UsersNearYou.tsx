@@ -68,10 +68,7 @@ const tabsData = [
   },
   {
     title: 'Preferences',
-  },
-  {
-    title: 'Settings',
-  },
+  }
 ];
 
 const HomestayInformationFold = () => {

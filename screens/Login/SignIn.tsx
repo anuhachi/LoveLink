@@ -59,12 +59,11 @@ import { styled } from '@gluestack-style/react';
 const StyledImage = styled(Image, {
   props: {
     style: {
-      height: 40,
+      height: 90,
       width: 320,
     },
   },
 });
-
 
 const signInSchema = z.object({
   email: z.string().min(1, 'Email is required').email(),
@@ -295,11 +294,11 @@ function SideContainerWeb() {
       }}
     >
       <StyledImage
-        w="$80"
-        h="$10"
+        w="$320"
+        h="$40"
         alt="gluestack-ui Pro"
         resizeMode="contain"
-        source={require('./assets/images/gluestackUiProLogo_web_light.svg')}
+        source={require('./assets/images/logo_loveLink_light-cropped.svg')}
       />
     </Center>
   );
