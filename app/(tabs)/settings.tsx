@@ -148,7 +148,7 @@ export default function Settings() {
             </Heading>
             <FormControl>
               <Input>
-                <InputField placeholder="Username" value={userData.name} />
+                <InputField placeholder={userData.name} />
               </Input>
             </FormControl>
             <FormControl mb="$3">

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Button, ScrollView } from 'react-native';
+import { StyleSheet, Button, ScrollView, SafeAreaView } from 'react-native';
 import {
   Avatar,
   AvatarBadge,
@@ -51,7 +51,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
   };
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <Box w="100%" sx={{ display: 'flex' }}>
         {/* header */}
 
@@ -102,34 +102,32 @@ export default function Tab({ activeTab, setActiveTab }: any) {
         <FabLabel> Go to Map</FabLabel>
       </Fab>
 
-    
-        <ScrollView style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1 }}>
+        <Box
+          sx={{
+            'display': 'flex',
+            '@md': { display: 'none' },
+          }}
+        >
           <Box
             sx={{
-              'display': 'flex',
-              '@md': { display: 'none' },
+              '@md': {
+                maxHeight: '100vh',
+                pr: '$16',
+                pl: '$8',
+              },
             }}
+            flex={1}
           >
-            <Box
-              sx={{
-                '@md': {
-                  maxHeight: '100vh',
-                  pr: '$16',
-                  pl: '$8',
-                },
-              }}
-              flex={1}
-            >
-              <Box>
-                <MainContentHeader />
-                <NewLikesSection />
-                {/* explore page homestay info fold 2 */}
-                <UsersNearYou />
-              </Box>
+            <Box>
+              <MainContentHeader />
+              <NewLikesSection />
+              {/* explore page homestay info fold 2 */}
+              <UsersNearYou />
             </Box>
           </Box>
-        </ScrollView>
-      
+        </Box>
+      </ScrollView>
 
       <HStack w="100%" display="none" sx={{ '@md': { display: 'flex' } }}>
         <Box
@@ -154,6 +152,6 @@ export default function Tab({ activeTab, setActiveTab }: any) {
           </Box>
         </ScrollView>
       </HStack>
-    </>
+    </SafeAreaView>
   );
 }

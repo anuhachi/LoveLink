@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import {
   Avatar,
   AvatarBadge,
@@ -19,9 +20,48 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useWindowDimensions, Image } from 'react-native';
+import { get, ref, onValue } from 'firebase/database'; // Firebase Database imports
+import { FIREBASE_DB, FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 
 export default function Tab() {
   const { width } = useWindowDimensions();
+
+  const [user_auth_data, setUserAuthData] = useState(null);
+  const [user_db_data, setUserDbData] = useState(null);
+
+  useEffect(() => {
+    const user = FIREBASE_AUTH.currentUser; // Get the current authenticated user
+    if (user) {
+      const uid = user.uid; // Retrieve the user's UID
+      setUserAuthData(user); // Set the user data to the state
+      console.log('User UID:', uid); // Log the UID to the console
+
+      // Reference to the specific user's data in the Firebase Realtime Database
+      const userRef = ref(FIREBASE_DB, `/users/${uid}`);
+
+      // Set up a real-time listener for the user's data
+      const unsubscribe = onValue(
+        userRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            setUserDbData(data);
+            console.log('User Data:', data); // Log the user data to the console
+          } else {
+            console.log('No data available');
+          }
+        },
+        (error) => {
+          console.error('Error fetching user data:', error);
+        }
+      );
+
+      // Cleanup listener on component unmount
+      return () => unsubscribe();
+    } else {
+      console.log('No user is signed in.');
+    }
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
