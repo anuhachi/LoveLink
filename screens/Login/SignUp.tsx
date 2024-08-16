@@ -177,7 +177,7 @@ const SignUpForm = () => {
           placement: 'bottom right',
           render: ({ id }) => {
             return (
-              <Toast nativeID={id} variant="accent" action="success">
+              <Toast id={id} variant="accent" action="success">
                 <ToastTitle>Signed up successfully</ToastTitle>
               </Toast>
             );
@@ -190,7 +190,7 @@ const SignUpForm = () => {
           placement: 'bottom right',
           render: ({ id }) => {
             return (
-              <Toast nativeID={id} action="error">
+              <Toast id={id} action="error">
                 <ToastTitle>{error.message}</ToastTitle>
               </Toast>
             );
@@ -202,7 +202,7 @@ const SignUpForm = () => {
         placement: 'bottom right',
         render: ({ id }) => {
           return (
-            <Toast nativeID={id} action="error">
+            <Toast id={id} action="error">
               <ToastTitle>Passwords do not match</ToastTitle>
             </Toast>
           );

@@ -13,6 +13,10 @@ import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { FIREBASE_AUTH } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 
+import { LogBox } from 'react-native';
+
+// Suppress specific warnings
+LogBox.ignoreLogs(['StyleSheet.compose(a, b) is deprecated']);
 
 import { config } from '../gluestack-ui.config';
 import { GluestackUIProvider } from '@gluestack-ui/themed';
@@ -59,8 +63,8 @@ function RootLayoutNav() {
 
   return (
     <GluestackUIProvider config={config}>
-      <Stack initialRouteName= "login" >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false}} />
+      <Stack initialRouteName="login">
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="signup" options={{ headerShown: false }} />

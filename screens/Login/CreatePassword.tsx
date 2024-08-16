@@ -93,7 +93,7 @@ export default function CreatePassword() {
         placement: 'bottom right',
         render: ({ id }) => {
           return (
-            <Toast nativeID={id} variant="accent" action="success">
+            <Toast id={id} variant="accent" action="success">
               <ToastTitle>Password updated successfully</ToastTitle>
             </Toast>
           );
@@ -109,7 +109,7 @@ export default function CreatePassword() {
         placement: 'bottom right',
         render: ({ id }) => {
           return (
-            <Toast nativeID={id} variant="accent" action="error">
+            <Toast id={id} variant="accent" action="error">
               <ToastTitle>Passwords do not match</ToastTitle>
             </Toast>
           );

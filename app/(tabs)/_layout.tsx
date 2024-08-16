@@ -3,8 +3,8 @@ import { Dimensions } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import AntDesign from '@expo/vector-icons/AntDesign';
 import { FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { Search, MessageCircle, Heart, Settings } from 'lucide-react-native'; // Update with actual icon names from Lucide
 
 export default function TabLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -53,7 +53,7 @@ export default function TabLayout() {
         name="Home"
         options={{
           tabBarIcon: ({ color }) => (
-            <AntDesign name="search1" size={24} color={color} />
+            <Search size={24} color={color} />
           ),
           headerShown: false,
         }}
@@ -62,7 +62,7 @@ export default function TabLayout() {
         name="Chat"
         options={{
           tabBarIcon: ({ color }) => (
-            <AntDesign name="message1" size={24} color={color} />
+            <MessageCircle size={24} color={color} />
           ),
         }}
       />
@@ -70,7 +70,7 @@ export default function TabLayout() {
         name="Match"
         options={{
           tabBarIcon: ({ color }) => (
-            <AntDesign name="hearto" size={24} color={color} />
+            <Heart size={24} color={color} />
           ),
           headerShown: false,
         }}
@@ -79,7 +79,7 @@ export default function TabLayout() {
         name="Settings"
         options={{
           tabBarIcon: ({ color }) => (
-            <AntDesign name="setting" size={24} color="black" />
+            <Settings size={24} color={color} />
           ),
           headerShown: false,
         }}

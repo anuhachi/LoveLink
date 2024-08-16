@@ -22,13 +22,13 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import UserProfile from '../../components/Header/UserProfile';
 import MatchSwipe from '../../components/MatchSwipe';
-import { FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { FIREBASE_AUTH,  FIREBASE_DB } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 import Sidebar from '../../components/Sidebar';
 import HeaderTabs from '../../components/Header/HeaderTabs';
 import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
 import NewLikesSection from '../../components/NewLikesSection';
 import MainContentHeader from '../../components/MainContentHeader';
-import AntDesign from '@expo/vector-icons/AntDesign';
+
 
 export default function Tab({ activeTab, setActiveTab }: any) {
   const [selectedTab, setSelectedTab] = useState('Explore');
@@ -124,7 +124,6 @@ export default function Tab({ activeTab, setActiveTab }: any) {
         bottom="$4"
         right="$4"
       >
-        <AntDesign name="enviromento" size={24} color="white" />
         <FabLabel> Open the filters</FabLabel>
       </Fab>
       <ScrollView>

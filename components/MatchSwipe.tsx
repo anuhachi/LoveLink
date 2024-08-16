@@ -1,32 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
-  Card,
   HStack,
-  Icon,
-  Image,
-  Pressable,
   Text,
-  Tooltip,
-  ButtonText,
+  Image,
   VStack,
   Heading,
+  Card,
 } from '@gluestack-ui/themed';
-import { ChevronRight, Heart, Star } from 'lucide-react-native';
-import { AnimatePresence, Motion } from '@legendapp/motion';
-import { ScrollView, StyleSheet } from 'react-native';
-import TinderCard from 'react-tinder-card';
-import Swiper from 'react-native-deck-swiper';
-import AntDesign from '@expo/vector-icons/AntDesign';
-
-const onSwipe = (direction: any) => {
-  console.log('You swiped: ' + direction);
-};
-
-const onCardLeftScreen = (myIdentifier: any) => {
-  console.log(myIdentifier + ' left the screen');
-};
+import { FIREBASE_DB } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { get, ref } from 'firebase/database'; // Firebase Database imports
 
 const MatchSwipe = () => {
   return (
@@ -37,55 +21,108 @@ const MatchSwipe = () => {
 };
 
 const TabPanelData = () => {
-  const [likes, setLikes]: any = React.useState([]);
+  const [users, setUsers] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const usersRef = ref(FIREBASE_DB, 'users');
+
+    get(usersRef)
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const usersList = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }));
+          setUsers(usersList);
+        } else {
+          console.log('No data available');
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching users:', error);
+      });
+  }, []);
+
+  const handleLike = () => {
+    console.log('Liked:', users[currentIndex]?.id);
+    setCurrentIndex((prevIndex) => prevIndex + 1);
+  };
+
+  const handleDislike = () => {
+    console.log('Disliked:', users[currentIndex]?.id);
+    setCurrentIndex((prevIndex) => prevIndex + 1);
+  };
+
   return (
     <Box>
-      <Box
-        sx={{
-          'my': '$2',
-          '@lg': {
-            my: 0,
-          },
-        }}
-      >
-        {/* Like and Dislike Buttons */}
-        <HStack mt="$2" mb="$5" width="100%">
-          <Button
-            onPress={() => console.log('Dislike')}
-            variant="outline"
-            colorScheme="red"
-            flex={1}
-            ml="$2"
-            mr="$2"
-          >
-            <Text>Dislike</Text>
-          </Button>
-          <Button
-            onPress={() => console.log('Like')}
-            colorScheme="green"
-            flex={1}
-            ml="$2"
-            mr="$2"
-          >
-            <AntDesign name="hearto" size={28} color="white" />
-          </Button>
-        </HStack>
-        <TinderCard
-          onSwipe={onSwipe}
-          onCardLeftScreen={() => onCardLeftScreen('fooBar')}
-          preventSwipe={['up', 'down']}
-        >
-          <Image
-            mb="$50"
-            h={400}
-            width="$full"
-            borderRadius="$md"
-            source={{
-              uri: 'https://images.unsplash.com/photo-1595231712325-9fedecef7575?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDJ8fHxlbnwwfHx8fHw%3D',
-            }}
-          />
-        </TinderCard>
-      </Box>
+      {users.length > 0 && currentIndex < users.length ? (
+        <Box flex={1} justifyContent="center" alignItems="center">
+          {/* Render the current user card */}
+          <Card p="$3" borderRadius="$lg" maxWidth={600} m="$3">
+            <Image
+              mb="$6"
+              h={240}
+              width="$full"
+              borderRadius="$md"
+              source={{
+                uri: users[currentIndex].profileImage, // Replace with actual image URL from user data
+              }}
+            />
+            <Text
+              fontSize="$sm"
+              fontStyle="normal"
+              fontFamily="$heading"
+              fontWeight="$normal"
+              lineHeight="$sm"
+              mb="$2"
+              sx={{
+                color: '$textLight700',
+                _dark: {
+                  color: '$textDark200',
+                },
+              }}
+            >
+              {users[currentIndex].interests}{' '}
+            </Text>
+            <VStack mb="$6">
+              <Heading size="md" fontFamily="$heading" mb="$4">
+                {users[currentIndex].name} {/* Replace with actual name */}
+              </Heading>
+              <Text size="sm" fontFamily="$heading">
+                {users[currentIndex].bio}{' '}
+                {/* Replace with actual description */}
+              </Text>
+            </VStack>
+          </Card>
+
+          {/* Like and Dislike Buttons */}
+          <HStack mt="$2" mb="$5" width="100%">
+            <Button
+              onPress={handleDislike}
+              variant="outline"
+              colorScheme="red"
+              flex={1}
+              ml="$2"
+              mr="$2"
+            >
+              <Text>Dislike</Text>
+            </Button>
+            <Button
+              onPress={handleLike}
+              colorScheme="green"
+              flex={1}
+              ml="$2"
+              mr="$2"
+            >
+              <Text>Like</Text>
+            </Button>
+          </HStack>
+        </Box>
+      ) : (
+        <Text>No more users to show</Text>
+      )}
     </Box>
   );
 };

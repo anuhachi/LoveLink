@@ -125,7 +125,7 @@ const SignInForm = () => {
         placement: 'bottom right',
         render: ({ id }) => {
           return (
-            <Toast nativeID={id} variant="accent" action="success">
+            <Toast id={id} variant="accent" action="success">
               <ToastTitle>Signed in successfully</ToastTitle>
             </Toast>
           );
@@ -138,7 +138,7 @@ const SignInForm = () => {
         placement: 'bottom right',
         render: ({ id }) => {
           return (
-            <Toast nativeID={id} variant="accent" action="error">
+            <Toast id={id} variant="accent" action="error">
               <ToastTitle>{error.message}</ToastTitle>
             </Toast>
           );

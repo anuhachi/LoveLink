@@ -22,13 +22,13 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import UserProfile from '../../components/Header/UserProfile';
 import UsersNearYou from '../../components/UsersNearYou';
-import { FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { FIREBASE_AUTH, FIREBASE_DB } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { get, ref } from 'firebase/database'; // Firebase Database imports
 import Sidebar from '../../components/Sidebar';
 import HeaderTabs from '../../components/Header/HeaderTabs';
 import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
 import NewLikesSection from '../../components/NewLikesSection';
 import MainContentHeader from '../../components/MainContentHeader';
-import AntDesign from '@expo/vector-icons/AntDesign';
 
 export default function Tab({ activeTab, setActiveTab }: any) {
   const [selectedTab, setSelectedTab] = useState('Explore');
@@ -54,101 +54,82 @@ export default function Tab({ activeTab, setActiveTab }: any) {
     <>
       <Box w="100%" sx={{ display: 'flex' }}>
         {/* header */}
-        <Box>
-          {/* big screen */}
-          <Box
-            px="$16"
+
+        {/* big screen */}
+        <Box
+          px="$16"
+          w="100%"
+          borderBottomWidth={1}
+          display="none"
+          sx={{
+            '@md': {
+              display: 'flex',
+            },
+            '_light': { borderColor: '$borderLight300' },
+            '_dark': { borderColor: '$borderDark900' },
+          }}
+        >
+          <HStack
+            alignItems="center"
+            justifyContent="space-between"
+            mx="auto"
             w="100%"
-            borderBottomWidth={1}
-            display="none"
-            sx={{
-              '@md': {
-                display: 'flex',
-              },
-              '_light': { borderColor: '$borderLight300' },
-              '_dark': { borderColor: '$borderDark900' },
-            }}
           >
-            <HStack
-              alignItems="center"
-              justifyContent="space-between"
-              mx="auto"
-              w="100%"
-            >
-              {/* logo and header here */}
-              <LoveLinkLogo />
-              <HeaderTabs
-                setSelectedTab={setSelectedTab}
-                selectedTab={selectedTab}
-              />
-              <HStack space="lg" alignItems="center" pr="$1.5">
-                {/*<ToggleMode />*/}
-                <UserProfile />
-              </HStack>
+            {/* logo and header here */}
+            <LoveLinkLogo />
+            <HeaderTabs
+              setSelectedTab={setSelectedTab}
+              selectedTab={selectedTab}
+            />
+            <HStack space="lg" alignItems="center" pr="$1.5">
+              {/*<ToggleMode />*/}
+              <UserProfile />
             </HStack>
-          </Box>
-          {/* small screen */}
-          {/* <Box
-                      p="$5"
-                      sx={{
-                        '@md': {
-                          display: 'none',
-                        },
-                      }}
-                      w="100%"
-                    >
-                      <Input variant="rounded" size="sm" w="100%">
-                        <InputField placeholder="Anywhere • Any week • Add guests" />
-                        <InputSlot
-                          bg="$primary500"
-                          borderRadius="$full"
-                          h="$6"
-                          w="$6"
-                          m="$1.5"
-                        >
-                          <InputIcon
-                            as={FontAwesome}
-                            name="search"
-                            color="white"
-                            size={20}
-                          />
-                        </InputSlot>
-                      </Input>
-                    </Box> */}
+          </HStack>
         </Box>
       </Box>
+
       <Fab
         bg="$indigo600"
         height="$9"
         position="absolute"
         bottom="$4"
         right="$4"
+        sx={{
+          '@md': { display: 'none' },
+        }}
       >
-        <AntDesign name="enviromento" size={24} color="white" />
         <FabLabel> Go to Map</FabLabel>
       </Fab>
-      <ScrollView>
-        <Box
-          sx={{
-            'display': 'flex',
-            '@md': { display: 'none' },
-          }}
-        >
+
+    
+        <ScrollView style={{ flex: 1 }}>
           <Box
             sx={{
-              '@md': { maxHeight: 'calc(100vh - 144px)', pr: '$16', pl: '$8' },
+              'display': 'flex',
+              '@md': { display: 'none' },
             }}
-            flex={1}
           >
-            <Box>
-              <MainContentHeader />
-              <NewLikesSection />
-              {/* explore page homestay info fold 2 */}
-              <UsersNearYou />
+            <Box
+              sx={{
+                '@md': {
+                  maxHeight: '100vh',
+                  pr: '$16',
+                  pl: '$8',
+                },
+              }}
+              flex={1}
+            >
+              <Box>
+                <MainContentHeader />
+                <NewLikesSection />
+                {/* explore page homestay info fold 2 */}
+                <UsersNearYou />
+              </Box>
             </Box>
           </Box>
-        </Box>
-      </ScrollView>
+        </ScrollView>
+      
 
       <HStack w="100%" display="none" sx={{ '@md': { display: 'flex' } }}>
         <Box
@@ -176,11 +157,3 @@ export default function Tab({ activeTab, setActiveTab }: any) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});

@@ -11,7 +11,7 @@ import { List } from 'lucide-react-native';
 
 const MainContentHeader = () => {
   return (
-    <Box pt="$6" pb="$2.5" px="$4" sx={{ '@md': { px: 0 } }}>
+    <Box pt="$3" pb="$2.5" px="$4" sx={{ '@md': { px: 0  } }}>
       <HStack w="100%" alignItems="center" justifyContent="space-between">
         <Heading size="xl">New Likes this week</Heading>
         {/* Hidden for mobile screens */}

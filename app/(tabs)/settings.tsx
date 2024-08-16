@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Avatar,
   AvatarBadge,
@@ -8,26 +8,85 @@ import {
   VStack,
   Box,
   Text,
-  View,
   Heading,
   Input,
   Button,
   Select,
+  ButtonText,
+  SelectPortal,
   FormControl,
+  SelectItem,
+  SelectBackdrop,
+  SelectTrigger,
+  SelectInput,
+  SelectContent,
+  SelectIcon,
+  Icon,
+  InputField,
+  SelectDragIndicatorWrapper,
+  SelectDragIndicator,
 } from '@gluestack-ui/themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useWindowDimensions, Image } from 'react-native';
+import { get, ref } from 'firebase/database'; // Firebase Database imports
+import { FIREBASE_DB, FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 
 export default function Settings() {
   const { width } = useWindowDimensions();
+  const [user_auth_data, setUserAuthData] = useState(null);
+  const [userData, setUserData] = useState({
+    name: '',
+    email: '',
+    address: '',
+    gender: '',
+    dob: '',
+    lookingFor: '',
+    maxDistance: '',
+  });
+
+  useEffect(() => {
+    const user = FIREBASE_AUTH.currentUser; // Get the current authenticated user
+    if (user) {
+      const uid = user.uid; // Retrieve the user's UID
+      setUserAuthData(user); // Set the user data to the state
+      console.log('User UID:', uid); // Log the UID to the console
+
+      // Reference to the specific user's data in the Firebase Realtime Database
+      const userRef = ref(FIREBASE_DB, `/users/${uid}`);
+
+      // Fetch the user data once (not using real-time listener)
+      get(userRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            console.log('User Data:', data); // Log the user data to the console
+            setUserData({
+              name: data.name || '',
+              email: data.email || '',
+              address: data.address || '',
+              gender: data.gender || '',
+              dob: data.dob || '',
+              lookingFor: data.lookingFor || '',
+              maxDistance: data.maxDistance || '',
+            });
+          } else {
+            console.log('No data available');
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching user data:', error);
+        });
+    } else {
+      console.log('No user is signed in.');
+    }
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1, flexDirection: 'row' }}
       >
-        {/* Sidebar: Only visible on screens wider than 768px */}
         {width > 768 && (
           <Box flex={1}>
             <Image
@@ -40,9 +99,7 @@ export default function Settings() {
           </Box>
         )}
 
-        {/* Main content */}
         <VStack flex={2} p="$4">
-          {/* Profile Section */}
           <Box
             bg="$primary100"
             p="$5"
@@ -61,80 +118,73 @@ export default function Settings() {
             </Avatar>
             <VStack>
               <Heading size="md" fontFamily="$heading" mb="$1">
-                Jane Doe
+                {userData.name || 'Jane Doe'}
               </Heading>
               <Text size="sm" fontFamily="$heading">
-                janedoe@sample.com
+                {user_auth_data?.email || 'Missing email'}
               </Text>
             </VStack>
           </Box>
 
-          {/* Account Information Section */}
-          <VStack mb="$4">
-            <Heading size="sm" mb="$3">
-              Account Information
-            </Heading>
-            <FormControl mb="$3">
-              <FormControl.Label>Email</FormControl.Label>
-              <Input placeholder="janedoe@sample.com" />
-            </FormControl>
-            <FormControl mb="$3">
-              <FormControl.Label>Password</FormControl.Label>
-              <Input placeholder="••••••••" secureTextEntry />
-            </FormControl>
-          </VStack>
-
-          {/* Personal Information Section */}
           <VStack mb="$4">
             <Heading size="sm" mb="$3">
               Personal Information
             </Heading>
-            <FormControl mb="$3">
-              <FormControl.Label>Address</FormControl.Label>
-              <Input placeholder="1234 Main St" />
+            <FormControl mb="$4">
+              <Input>
+                <InputField placeholder="Email" value={userData.email} />
+              </Input>
             </FormControl>
-            <FormControl mb="$3">
-              <FormControl.Label>Gender</FormControl.Label>
-              <Select placeholder="Select Gender">
-                <Select.Item label="Male" value="male" />
-                <Select.Item label="Female" value="female" />
-                <Select.Item label="Non-binary" value="non-binary" />
-                <Select.Item label="Other" value="other" />
-              </Select>
-            </FormControl>
-            <FormControl mb="$3">
-              <FormControl.Label>Date of Birth</FormControl.Label>
-              <Input placeholder="MM/DD/YYYY" />
+            <FormControl mb="$4">
+              <Input>
+                <InputField placeholder="Password" secureTextEntry />
+              </Input>
             </FormControl>
           </VStack>
 
-          {/* Preferences Section */}
           <VStack mb="$4">
             <Heading size="sm" mb="$3">
               Preferences
             </Heading>
+            <FormControl>
+              <Input>
+                <InputField placeholder="Username" value={userData.name} />
+              </Input>
+            </FormControl>
             <FormControl mb="$3">
-              <FormControl.Label>Looking For</FormControl.Label>
-              <Select placeholder="Select Preference">
-                <Select.Item label="Men" value="men" />
-                <Select.Item label="Women" value="women" />
-                <Select.Item label="Everyone" value="everyone" />
+              <Select>
+                <SelectTrigger>
+                  <SelectInput placeholder="Country" />
+                </SelectTrigger>
+                <SelectPortal>
+                  <SelectBackdrop />
+                  <SelectContent mb="$3">
+                    <SelectDragIndicatorWrapper>
+                      <SelectDragIndicator />
+                    </SelectDragIndicatorWrapper>
+                    <SelectItem label="India" value="India" />
+                    <SelectItem label="Sri Lanka" value="Sri Lanka" />
+                    <SelectItem label="Uganda" value="Uganda" />
+                    <SelectItem label="Japan" value="Japan" />
+                  </SelectContent>
+                </SelectPortal>
               </Select>
             </FormControl>
             <FormControl mb="$3">
-              <FormControl.Label>Max Distance</FormControl.Label>
-              <Input placeholder="50 miles" />
+              <Button bg="$darkBlue600">
+                <ButtonText fontSize="$sm" fontWeight="$medium">
+                  Update your profile Data
+                </ButtonText>
+              </Button>
+            </FormControl>
+            <FormControl>
+              <Button bg="$darkBlue600">
+                <ButtonText fontSize="$sm" fontWeight="$medium">
+                  Logout
+                </ButtonText>
+              </Button>
             </FormControl>
           </VStack>
-
-          {/* Save Button */}
-          <Button
-            mt="$5"
-            colorScheme="primary"
-            onPress={() => console.log('Save Settings')}
-          >
-            <Text>Save Settings</Text>
-          </Button>
         </VStack>
       </KeyboardAwareScrollView>
     </SafeAreaView>

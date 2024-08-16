@@ -4,6 +4,8 @@ import renderer from 'react-test-renderer';
 import { StyledProvider, config } from '@gluestack-ui/themed';
 import SplashScreen from '../../../screens/Login/SplashScreen';
 
+React.useLayoutEffect = React.useEffect;
+
 jest.mock('react-native-keyboard-aware-scroll-view', () => {
   const KeyboardAwareScrollView = ({ children }: any) => children;
   return { KeyboardAwareScrollView };

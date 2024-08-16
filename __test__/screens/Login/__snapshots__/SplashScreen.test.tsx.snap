@@ -158,7 +158,7 @@ exports[`Splash Screen 1`] = `
               >
                 <Image
                   aria-label="gluestack-ui Pro"
-                  accessibilityRole="image"
+                  role="image"
                   alt="gluestack-ui Pro"
                   data-style=""
                   dataSet={
@@ -190,7 +190,7 @@ exports[`Splash Screen 1`] = `
                 />
                 <Image
                   aria-label="gluestack-ui Pro"
-                  accessibilityRole="image"
+                  role="image"
                   alt="gluestack-ui Pro"
                   data-style=""
                   dataSet={
@@ -248,7 +248,7 @@ exports[`Splash Screen 1`] = `
                 }
               >
                 <View
-                  accessibilityRole="button"
+                  role="button"
                   accessibilityState={
                     {
                       "busy": undefined,
@@ -323,7 +323,7 @@ exports[`Splash Screen 1`] = `
                   }
                 >
                   <Text
-                    accessibilityRole="link"
+                    role="link"
                     data-style=""
                     dataSet={
                       {
@@ -389,7 +389,7 @@ exports[`Splash Screen 1`] = `
                   </Text>
                 </View>
                 <View
-                  accessibilityRole="button"
+                  role="button"
                   accessibilityState={
                     {
                       "busy": undefined,
@@ -475,7 +475,7 @@ exports[`Splash Screen 1`] = `
                   }
                 >
                   <Text
-                    accessibilityRole="link"
+                    role="link"
                     data-style=""
                     dataSet={
                       {
