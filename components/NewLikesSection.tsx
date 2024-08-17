@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Box,
   HStack,
@@ -9,24 +9,61 @@ import {
 } from '@gluestack-ui/themed';
 import { ScrollView } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-
-const data = Array(14)
-  .fill(0)
-  .map((_, index) => ({
-    src: `https://xsgames.co/randomusers/avatar.php?g=male&unique=${index}`,
-  }));
+import { FIREBASE_AUTH, FIREBASE_DB } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { ref, onValue, get } from 'firebase/database'; // Firebase Database imports
+import { useRouter } from 'expo-router'; // or 'react-router-dom' if it's a web project
 
 const NewLikesSection = () => {
   const scrollViewRef = useRef(null);
   const scrollAmount = 400;
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isContentAtRight, setIsContentAtRight] = useState(true);
+  const [profileImages, setProfileImages] = useState([]);
+  const router = useRouter(); // Initialize the router
+
+  useEffect(() => {
+    const user = FIREBASE_AUTH.currentUser;
+    if (user) {
+      const uid = user.uid;
+
+      const userRef = ref(FIREBASE_DB, `/users/${uid}`);
+
+      const unsubscribe = onValue(userRef, async (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const whoLikedMe = data.matches.whoLikedMe || [];
+          const images = await Promise.all(
+            whoLikedMe.map(async (likedUserId) => {
+              const likedUserRef = ref(FIREBASE_DB, `/users/${likedUserId}`);
+              const likedUserSnapshot = await get(likedUserRef);
+              if (likedUserSnapshot.exists()) {
+                const likedUserData = likedUserSnapshot.val();
+                return {
+                  id: likedUserId,
+                  profileImage: likedUserData.profileImage || null,
+                };
+              }
+              return null;
+            })
+          );
+
+          setProfileImages(images.filter((image) => image !== null));
+        } else {
+          console.log('No data available');
+        }
+      });
+
+      // Cleanup the listener when the component unmounts
+      return () => unsubscribe();
+    } else {
+      console.log('No user is signed in.');
+    }
+  }, []);
 
   const handleScrollLeft = () => {
     const newScrollPosition = scrollPosition - scrollAmount;
     if (scrollViewRef.current) {
-      // @ts-ignore
-      scrollViewRef?.current?.scrollTo({
+      scrollViewRef.current.scrollTo({
         x: newScrollPosition,
         animated: true,
       });
@@ -36,30 +73,27 @@ const NewLikesSection = () => {
 
   const handleScrollRight = () => {
     const newScrollPosition = scrollPosition + scrollAmount;
-    if (scrollViewRef.current)
-      // @ts-ignore
-      scrollViewRef?.current?.scrollTo({
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({
         x: newScrollPosition,
         animated: true,
       });
+    }
     setScrollPosition(newScrollPosition);
   };
 
   const checkContentAtLeft = () => {
-    if (scrollPosition > 0) {
-      return true;
-    }
-    return false;
+    return scrollPosition > 0;
   };
 
-  const isCloseToRight = (event: any) => {
+  const isCloseToRight = (event) => {
     const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
-    const isScrollAtEnd =
-      contentOffset.x + layoutMeasurement.width >= contentSize.width;
-    if (isScrollAtEnd) {
-      return true;
-    }
-    return false;
+    return contentOffset.x + layoutMeasurement.width >= contentSize.width;
+  };
+
+  // Function to navigate to user's profile
+  const handleImagePress = (userId) => {
+    router.push(`/UserProfileDash/${userId}`);
   };
 
   return (
@@ -71,30 +105,25 @@ const NewLikesSection = () => {
         ref={scrollViewRef}
         scrollEventThrottle={50}
         onScroll={(event) => {
-          if (isCloseToRight(event)) {
-            setIsContentAtRight(false);
-          } else {
-            setIsContentAtRight(true);
-          }
+          setIsContentAtRight(!isCloseToRight(event));
           setScrollPosition(event.nativeEvent.contentOffset.x);
         }}
       >
         <HStack space="md" width="100%" px="$4" sx={{ '@md': { px: '$0' } }}>
-          {data.map((image, index) => {
-            return (
-              <Box key={index} flex={1}>
+          {profileImages.map((imageData, index) => (
+            <Box key={index} flex={1}>
+              <Pressable onPress={() => handleImagePress(imageData.id)}>
                 <Image
-                  source={image.src}
-                  alt={'place' + index}
+                  source={{ uri: imageData.profileImage }}
+                  alt={`profile-${index}`}
                   h="$32"
                   w="$32"
-                  // @ts-ignore
                   borderRadius="$md"
                   resizeMode="cover"
                 />
-              </Box>
-            );
-          })}
+              </Pressable>
+            </Box>
+          ))}
         </HStack>
       </ScrollView>
       <ScrollLeft
@@ -109,7 +138,7 @@ const NewLikesSection = () => {
   );
 };
 
-const ScrollLeft = ({ handleScrollLeft, disabled }: any) => {
+const ScrollLeft = ({ handleScrollLeft, disabled }) => {
   return (
     <Center
       position="absolute"
@@ -144,9 +173,6 @@ const ScrollLeft = ({ handleScrollLeft, disabled }: any) => {
             },
           },
           'opacity': disabled ? 0 : 1,
-          // _web: {
-          //   cursor: "not-allowed",
-          // },
         }}
         disabled={disabled}
         onPress={handleScrollLeft}
@@ -166,7 +192,7 @@ const ScrollLeft = ({ handleScrollLeft, disabled }: any) => {
   );
 };
 
-const ScrollRight = ({ handleScrollRight, disabled }: any) => {
+const ScrollRight = ({ handleScrollRight, disabled }) => {
   return (
     <Center
       position="absolute"

@@ -30,16 +30,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useWindowDimensions, Image } from 'react-native';
 import { get, ref } from 'firebase/database'; // Firebase Database imports
-import { FIREBASE_DB, FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { FIREBASE_DB } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { useLocalSearchParams } from 'expo-router'; // Import from expo-router
 import UserProfile from '../../components/Header/UserProfile';
 import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
 import HeaderTabs from '../../components/Header/HeaderTabs';
 import Swiper from 'react-native-swiper';
 
-export default function Settings() {
+export default function UserProfileDash() {
   const { width } = useWindowDimensions();
-  const [user_auth_data, setUserAuthData] = useState(null);
-  const [selectedTab, setSelectedTab] = useState('Settings');
+  const [selectedTab, setSelectedTab] = useState('null');
+  const params = useLocalSearchParams();
+  const userId = params.id;
+  console.log(userId);
+
   const [userData, setUserData] = useState({
     name: '',
     email: '',
@@ -56,12 +60,8 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    const user = FIREBASE_AUTH.currentUser;
-    if (user) {
-      const uid = user.uid;
-      setUserAuthData(user);
-
-      const userRef = ref(FIREBASE_DB, `/users/${uid}`);
+    if (userId) {
+      const userRef = ref(FIREBASE_DB, `/users/${userId}`);
 
       get(userRef)
         .then((snapshot) => {
@@ -90,9 +90,9 @@ export default function Settings() {
           console.error('Error fetching user data:', error);
         });
     } else {
-      console.log('No user is signed in.');
+      console.log('No user ID provided.');
     }
-  }, []);
+  }, [userId]);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -173,7 +173,7 @@ export default function Settings() {
                 {userData.name || 'Jane Doe'}
               </Heading>
               <Text size="sm" fontFamily="$heading">
-                {user_auth_data?.email || 'Missing email'}
+                {userData.email || 'Missing email'}
               </Text>
             </VStack>
           </Box>

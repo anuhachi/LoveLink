@@ -16,6 +16,9 @@ import {
   Select,
   FormControl,
 } from '@gluestack-ui/themed';
+import HeaderTabs from '../../components/Header/HeaderTabs';
+import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
+import UserProfile from '../../components/Header/UserProfile';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -25,6 +28,7 @@ import { FIREBASE_DB, FIREBASE_AUTH } from '../../screens/Login/firebaseConfig';
 
 export default function Tab() {
   const { width } = useWindowDimensions();
+  const [selectedTab, setSelectedTab] = useState('Messages');
 
   const [user_auth_data, setUserAuthData] = useState(null);
   const [user_db_data, setUserDbData] = useState(null);
@@ -65,6 +69,39 @@ export default function Tab() {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
+      <Box w="100%" sx={{ display: 'flex' }}>
+        {/* Header */}
+        <Box
+          px="$16"
+          w="100%"
+          borderBottomWidth={1}
+          display="none"
+          sx={{
+            '@md': {
+              display: 'flex',
+            },
+            '_light': { borderColor: '$borderLight300' },
+            '_dark': { borderColor: '$borderDark900' },
+          }}
+        >
+          <HStack
+            alignItems="center"
+            justifyContent="space-between"
+            mx="auto"
+            w="100%"
+          >
+            <LoveLinkLogo />
+            <HeaderTabs
+              setSelectedTab={setSelectedTab}
+              selectedTab={selectedTab}
+            />
+            <HStack space="lg" alignItems="center" pr="$1.5">
+              <UserProfile />
+            </HStack>
+          </HStack>
+        </Box>
+      </Box>
+
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1, flexDirection: 'row' }}
       >

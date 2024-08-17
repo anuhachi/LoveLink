@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Button, ScrollView } from 'react-native';
+import { StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import {
   Avatar,
   AvatarBadge,
@@ -17,22 +17,31 @@ import {
   InputField,
   InputIcon,
   InputSlot,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Heading,
+  Button,
+  Icon,
+  ModalCloseButton,
 } from '@gluestack-ui/themed';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import UserProfile from '../../components/Header/UserProfile';
 import MatchSwipe from '../../components/MatchSwipe';
-import { FIREBASE_AUTH,  FIREBASE_DB } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { FIREBASE_AUTH, FIREBASE_DB } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 import Sidebar from '../../components/Sidebar';
 import HeaderTabs from '../../components/Header/HeaderTabs';
 import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
 import NewLikesSection from '../../components/NewLikesSection';
 import MainContentHeader from '../../components/MainContentHeader';
 
-
 export default function Tab({ activeTab, setActiveTab }: any) {
-  const [selectedTab, setSelectedTab] = useState('Explore');
+  const [selectedTab, setSelectedTab] = useState('Match');
   const [user, setUser] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
@@ -51,7 +60,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
   };
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <Box w="100%" sx={{ display: 'flex' }}>
         {/* header */}
         <Box>
@@ -87,44 +96,30 @@ export default function Tab({ activeTab, setActiveTab }: any) {
               </HStack>
             </HStack>
           </Box>
-          {/* small screen */}
-          {/* <Box
-                      p="$5"
-                      sx={{
-                        '@md': {
-                          display: 'none',
-                        },
-                      }}
-                      w="100%"
-                    >
-                      <Input variant="rounded" size="sm" w="100%">
-                        <InputField placeholder="Anywhere • Any week • Add guests" />
-                        <InputSlot
-                          bg="$primary500"
-                          borderRadius="$full"
-                          h="$6"
-                          w="$6"
-                          m="$1.5"
-                        >
-                          <InputIcon
-                            as={FontAwesome}
-                            name="search"
-                            color="white"
-                            size={20}
-                          />
-                        </InputSlot>
-                      </Input>
-                    </Box> */}
         </Box>
       </Box>
       <Fab
         bg="$indigo600"
         height="$9"
         position="absolute"
-        bottom="$4"
+        bottom="$6"
         right="$4"
+        sx={{
+          '@md': { display: 'none' },
+        }}
+        onPress={() => setShowModal(true)} // Open modal when FAB is pressed
       >
-        <FabLabel> Open the filters</FabLabel>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <FontAwesome
+            name="filter"
+            size={20}
+            color="white"
+            style={{ marginRight: 2 }}
+          />
+          <Text color="white" ml="$3">
+            Filters
+          </Text>
+        </View>
       </Fab>
       <ScrollView>
         <Box
@@ -164,6 +159,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
             flex={1}
           >
             <Box>
+              <MainContentHeader sx={{ '@md': { display: 'none' } }} />
               <NewLikesSection />
               {/* explore page homestay info fold 2 */}
               <MatchSwipe />
@@ -171,7 +167,34 @@ export default function Tab({ activeTab, setActiveTab }: any) {
           </Box>
         </ScrollView>
       </HStack>
-    </>
+      {/* Modal Component */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)} // Ensure onClose properly updates state
+      >
+        <ModalContent>
+          <ModalHeader>
+            <Heading size="lg">Filters</Heading>
+            <ModalCloseButton></ModalCloseButton>
+          </ModalHeader>
+          <ModalBody>
+            <ScrollView style={{ flex: 1 }}>
+              <Sidebar />
+            </ScrollView>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              size="sm"
+              action="positive"
+              mr="$3"
+              onPress={() => setShowModal(false)} // Ensure button closes the modal
+            >
+              <Text>Close</Text>
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </SafeAreaView>
   );
 }
 

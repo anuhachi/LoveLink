@@ -20,22 +20,26 @@ import {
   AlertDialogBody,
   AlertDialogFooter,
 } from '@gluestack-ui/themed';
-import LogoutAlertDialog from './LogoutAlertDialog';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { useRouter } from 'expo-router';
 
 const userMenuItems = [
   {
+    title: 'Home',
+    route: '/Home',
+  },
+  {
     title: 'Messages',
+    route: '/Chat',
   },
   {
     title: 'Match',
+    route: '/Match',
   },
   {
     title: 'Settings',
-  },
-  {
-    title: 'Help',
+    route: '/Settings',
   },
   {
     title: 'Log out',
@@ -44,6 +48,7 @@ const userMenuItems = [
 
 const UserProfile = () => {
   const [openLogoutAlertDialog, setOpenLogoutAlertDialog] = useState(false);
+  const router = useRouter();
 
   const handleClose = () => {
     setOpenLogoutAlertDialog(false);
@@ -65,8 +70,15 @@ const UserProfile = () => {
   };
 
   const handleSelectionChange = (selectedKey: string) => {
-    if (selectedKey === 'Log out') {
-      setOpenLogoutAlertDialog(true);
+    const selectedItem = userMenuItems.find(
+      (item) => item.title === selectedKey
+    );
+    if (selectedItem) {
+      if (selectedKey === 'Log out') {
+        setOpenLogoutAlertDialog(true);
+      } else {
+        router.push(selectedItem.route);
+      }
     }
   };
 
@@ -129,7 +141,7 @@ const UserProfile = () => {
               >
                 <ButtonText>Cancel</ButtonText>
               </Button>
-              <Button action="negative" onPress={handleClose}>
+              <Button action="negative" onPress={handleLogout}>
                 <ButtonText>Logout</ButtonText>
               </Button>
             </AlertDialogFooter>

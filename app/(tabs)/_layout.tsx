@@ -52,35 +52,28 @@ export default function TabLayout() {
       <Tabs.Screen
         name="Home"
         options={{
-          tabBarIcon: ({ color }) => (
-            <Search size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Search size={24} color={color} />,
           headerShown: false,
         }}
       />
       <Tabs.Screen
         name="Chat"
         options={{
-          tabBarIcon: ({ color }) => (
-            <MessageCircle size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <MessageCircle size={24} color={color} />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
         name="Match"
         options={{
-          tabBarIcon: ({ color }) => (
-            <Heart size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Heart size={24} color={color} />,
           headerShown: false,
         }}
       />
       <Tabs.Screen
         name="Settings"
         options={{
-          tabBarIcon: ({ color }) => (
-            <Settings size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Settings size={24} color={color} />,
           headerShown: false,
         }}
       />

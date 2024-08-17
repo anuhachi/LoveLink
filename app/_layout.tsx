@@ -71,6 +71,10 @@ function RootLayoutNav() {
         <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
         <Stack.Screen name="verify-otp" options={{ headerShown: false }} />
         <Stack.Screen name="create-password" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="UserProfileDash/[id]"
+          options={{ headerShown: false }}
+        />
       </Stack>
     </GluestackUIProvider>
   );

@@ -7,14 +7,14 @@ import {
   Image,
   Pressable,
   Text,
-  Tooltip,
   VStack,
 } from '@gluestack-ui/themed';
-import { ChevronRight, Heart, Star } from 'lucide-react-native';
+import { ChevronRight, Heart } from 'lucide-react-native';
 import { AnimatePresence, Motion } from '@legendapp/motion';
 import { ScrollView } from 'react-native';
-import { FIREBASE_AUTH, FIREBASE_DB } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
-import { get, ref } from 'firebase/database'; // Firebase Database imports
+import { ref, onValue, set, get } from 'firebase/database';
+import { FIREBASE_DB } from '../screens/Login/firebaseConfig';
+import { useRouter } from 'expo-router';
 
 const tabsData = [
   { title: 'Explore users' },
@@ -28,32 +28,37 @@ const tabsData = [
 
 const HomestayInformationFold = () => {
   const [usersList, setUsersList] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const usersRef = ref(FIREBASE_DB, 'users'); // Adjust path as necessary
-        const snapshot = await get(usersRef);
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const usersArray = Object.values(data); // Converts the user data to an array
-          console.log('Fetched users:', usersArray); // Log the users array
-          setUsersList(usersArray);
-        } else {
-          console.log('No users found.');
-        }
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
+    const usersRef = ref(FIREBASE_DB, 'users');
 
-    fetchUsers();
+    // Real-time listener for users data
+    const unsubscribe = onValue(usersRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const usersArray = Object.values(data);
+        console.log('Fetched users:', usersArray);
+        setUsersList(usersArray);
+
+        // Assuming the current user ID is '6'
+        const currentUserData = usersArray.find((user) => user.id === '6');
+        setCurrentUser(currentUserData);
+      } else {
+        console.log('No users found.');
+      }
+    });
+
+    // Cleanup listener on component unmount
+    return () => unsubscribe();
   }, []);
+
+  if (!currentUser) return null; // Ensure currentUser is loaded before rendering
 
   return (
     <Box pb="$8" px="$4" sx={{ '@md': { px: 0 } }}>
       <HomestayInfoTabs tabsData={tabsData} />
-      <TabPanelData usersList={usersList} />
+      <TabPanelData usersList={usersList} currentUser={currentUser} />
     </Box>
   );
 };
@@ -116,8 +121,71 @@ const HomestayInfoTabs = ({ tabsData }: any) => {
   );
 };
 
-const TabPanelData = ({ usersList }: { usersList: any[] }) => {
-  const [likes, setLikes] = React.useState<any[]>([]);
+const TabPanelData = ({
+  usersList,
+  currentUser,
+}: {
+  usersList: any[];
+  currentUser: any;
+}) => {
+  const router = useRouter();
+  const [likes, setLikes] = useState<string[]>(
+    currentUser.matches.whoILiked || []
+  );
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (currentUser) {
+      const { ageFilter, applied } = currentUser.filterApplied;
+      if (applied) {
+        const filtered = usersList.filter((user) => {
+          const isWithinAgeRange =
+            user.age >= ageFilter.minAge && user.age <= ageFilter.maxAge;
+          const isNotCurrentUser = user.id !== currentUser.id;
+          return isWithinAgeRange && isNotCurrentUser;
+        });
+        setFilteredUsers(filtered);
+      } else {
+        setFilteredUsers(usersList);
+      }
+    }
+  }, [usersList, currentUser]);
+
+  const handleLikePress = async (profileId: string) => {
+    const isLiked = likes.includes(profileId);
+    const updatedLikes = isLiked
+      ? likes.filter((id) => id !== profileId)
+      : [...likes, profileId];
+
+    setLikes(updatedLikes);
+
+    try {
+      const userRef = ref(
+        FIREBASE_DB,
+        `users/${currentUser.id}/matches/whoILiked`
+      );
+      const otherUserRef = ref(
+        FIREBASE_DB,
+        `users/${profileId}/matches/whoLikedMe`
+      );
+
+      // Update current user's whoILiked list
+      await set(userRef, updatedLikes);
+
+      // Update the other user's whoLikedMe list
+      const otherUserSnapshot = await get(otherUserRef);
+      const otherUserLikes = otherUserSnapshot.exists()
+        ? otherUserSnapshot.val()
+        : [];
+      const updatedOtherUserLikes = isLiked
+        ? otherUserLikes.filter((id: string) => id !== currentUser.id)
+        : [...otherUserLikes, currentUser.id];
+
+      await set(otherUserRef, updatedOtherUserLikes);
+    } catch (error) {
+      console.error('Error updating likes:', error);
+    }
+  };
 
   return (
     <Box
@@ -125,26 +193,17 @@ const TabPanelData = ({ usersList }: { usersList: any[] }) => {
         'display': 'grid',
         'gap': '$4',
         'gridTemplateColumns': 'repeat(1, 1fr)',
-        '@sm': {
-          gridTemplateColumns: 'repeat(2, 1fr)',
-        },
-        '@lg': {
-          gridTemplateColumns: 'repeat(3, 1fr)',
-        },
+        '@sm': { gridTemplateColumns: 'repeat(2, 1fr)' },
+        '@lg': { gridTemplateColumns: 'repeat(3, 1fr)' },
       }}
     >
-      {usersList.map((profile: any, index: any) => (
-        <Box
-          key={index}
-          sx={{
-            'my': '$2',
-            '@lg': {
-              my: 0,
-            },
-          }}
-        >
-          <Pressable w="100%">
-            {(props: any) => (
+      {filteredUsers.map((profile, index) => (
+        <Box key={index} sx={{ 'my': '$2', '@lg': { my: 0 } }}>
+          <Pressable
+            w="100%"
+            onPress={() => router.push(`/UserProfileDash/${profile.id}`)}
+          >
+            {(props) => (
               <>
                 <Box overflow="hidden" borderRadius="$md" h="$72">
                   <Image
@@ -174,6 +233,7 @@ const TabPanelData = ({ usersList }: { usersList: any[] }) => {
                   borderColor="white"
                   alignSelf="center"
                   zIndex={5}
+                  onPress={() => router.push(`/UserProfileDash/${profile.id}`)}
                   display={props.hovered ? 'flex' : 'none'}
                 >
                   <Button.Text color="white">View Profile</Button.Text>
@@ -183,17 +243,7 @@ const TabPanelData = ({ usersList }: { usersList: any[] }) => {
             )}
           </Pressable>
           <Pressable
-            onPress={() => {
-              if (likes.includes(profile.name)) {
-                const newLikes = likes.filter(
-                  (like: any) => like !== profile.name
-                );
-                setLikes(newLikes);
-                return;
-              } else {
-                setLikes([...likes, profile.name]);
-              }
-            }}
+            onPress={() => handleLikePress(profile.id)}
             position="absolute"
             top={12}
             right={16}
@@ -204,31 +254,23 @@ const TabPanelData = ({ usersList }: { usersList: any[] }) => {
           >
             <AnimatePresence>
               <Motion.View
-                key={likes.includes(profile.name) ? 'liked' : 'unliked'}
-                initial={{
-                  scale: 1.3,
-                }}
-                animate={{
-                  scale: 1,
-                }}
-                exit={{
-                  scale: 0.9,
-                }}
+                key={likes.includes(profile.id) ? 'liked' : 'unliked'}
+                initial={{ scale: 1.3 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.9 }}
                 transition={{
                   type: 'spring',
                   mass: 0.9,
                   damping: 9,
                   stiffness: 300,
                 }}
-                style={{
-                  position: 'absolute',
-                }}
+                style={{ position: 'absolute' }}
               >
                 <Icon
                   as={Heart}
                   size="lg"
-                  color={likes.includes(profile.name) ? 'red' : 'white'}
-                  fill={likes.includes(profile.name) ? 'red' : 'gray'}
+                  color={likes.includes(profile.id) ? 'red' : 'white'}
+                  fill={likes.includes(profile.id) ? 'red' : 'gray'}
                 />
               </Motion.View>
             </AnimatePresence>
@@ -242,18 +284,14 @@ const TabPanelData = ({ usersList }: { usersList: any[] }) => {
               <Text
                 fontWeight="$semibold"
                 color="$textLight900"
-                sx={{
-                  _dark: { color: '$textDark200' },
-                }}
+                sx={{ _dark: { color: '$textDark200' } }}
               >
                 {profile.name}, {profile.age}
               </Text>
               <Text
                 size="sm"
                 color="$textLight500"
-                sx={{
-                  _dark: { color: '$textDark500' },
-                }}
+                sx={{ _dark: { color: '$textDark500' } }}
               >
                 {profile.location}
               </Text>
@@ -261,9 +299,7 @@ const TabPanelData = ({ usersList }: { usersList: any[] }) => {
                 size="sm"
                 fontWeight="$semibold"
                 color="$textLight900"
-                sx={{
-                  _dark: { color: '$textDark200' },
-                }}
+                sx={{ _dark: { color: '$textDark200' } }}
               >
                 Interests: {profile.interests.join(', ')}
               </Text>
