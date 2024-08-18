@@ -13,7 +13,7 @@ import { ChevronRight, Heart } from 'lucide-react-native';
 import { AnimatePresence, Motion } from '@legendapp/motion';
 import { ScrollView } from 'react-native';
 import { ref, onValue, set, get } from 'firebase/database';
-import { FIREBASE_DB } from '../screens/Login/firebaseConfig';
+import { FIREBASE_DB, FIREBASE_AUTH } from '../screens/Login/firebaseConfig';
 import { useRouter } from 'expo-router';
 
 const tabsData = [
@@ -42,7 +42,7 @@ const HomestayInformationFold = () => {
         setUsersList(usersArray);
 
         // Assuming the current user ID is '6'
-        const currentUserData = usersArray.find((user) => user.id === '6');
+        const currentUserData = FIREBASE_AUTH.currentUser;
         setCurrentUser(currentUserData);
       } else {
         console.log('No users found.');
@@ -129,14 +129,16 @@ const TabPanelData = ({
   currentUser: any;
 }) => {
   const router = useRouter();
+
+  // Initialize `likes` state with a fallback to an empty array if `whoILiked` is undefined
   const [likes, setLikes] = useState<string[]>(
-    currentUser.matches.whoILiked || []
+    currentUser?.matches?.whoILiked || []
   );
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
 
   useEffect(() => {
     if (currentUser) {
-      const { ageFilter, applied } = currentUser.filterApplied;
+      const { ageFilter, applied } = currentUser.filterApplied || {};
       if (applied) {
         const filtered = usersList.filter((user) => {
           const isWithinAgeRange =
@@ -152,6 +154,11 @@ const TabPanelData = ({
   }, [usersList, currentUser]);
 
   const handleLikePress = async (profileId: string) => {
+    if (!profileId || !currentUser?.uid) {
+      console.error('Profile ID or current user ID is undefined.');
+      return;
+    }
+
     const isLiked = likes.includes(profileId);
     const updatedLikes = isLiked
       ? likes.filter((id) => id !== profileId)
@@ -162,7 +169,7 @@ const TabPanelData = ({
     try {
       const userRef = ref(
         FIREBASE_DB,
-        `users/${currentUser.id}/matches/whoILiked`
+        `users/${currentUser.uid}/matches/whoILiked`
       );
       const otherUserRef = ref(
         FIREBASE_DB,
@@ -172,15 +179,18 @@ const TabPanelData = ({
       // Update current user's whoILiked list
       await set(userRef, updatedLikes);
 
-      // Update the other user's whoLikedMe list
+      // Get other user's whoLikedMe list
       const otherUserSnapshot = await get(otherUserRef);
       const otherUserLikes = otherUserSnapshot.exists()
         ? otherUserSnapshot.val()
         : [];
-      const updatedOtherUserLikes = isLiked
-        ? otherUserLikes.filter((id: string) => id !== currentUser.id)
-        : [...otherUserLikes, currentUser.id];
 
+      // Make sure to filter out undefined values
+      const updatedOtherUserLikes = isLiked
+        ? otherUserLikes.filter((id: string) => id !== currentUser.uid)
+        : [...otherUserLikes, currentUser.uid].filter(Boolean);
+
+      // Update the other user's whoLikedMe list
       await set(otherUserRef, updatedOtherUserLikes);
     } catch (error) {
       console.error('Error updating likes:', error);
@@ -243,7 +253,10 @@ const TabPanelData = ({
             )}
           </Pressable>
           <Pressable
-            onPress={() => handleLikePress(profile.id)}
+            onPress={() => {
+              console.log('Profile ID:', profile.id);
+              handleLikePress(profile.id); // use profile.id instead of currentUser.uid
+            }}
             position="absolute"
             top={12}
             right={16}
@@ -301,7 +314,8 @@ const TabPanelData = ({
                 color="$textLight900"
                 sx={{ _dark: { color: '$textDark200' } }}
               >
-                Interests: {profile.interests.join(', ')}
+                Interests:{' '}
+                {profile.interests?.join(', ') || 'No interests listed'}
               </Text>
             </VStack>
           </HStack>
