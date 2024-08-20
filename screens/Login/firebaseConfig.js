@@ -1,9 +1,8 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from 'firebase/app';
-
 import { getAuth } from 'firebase/auth';
-
 import { getDatabase } from 'firebase/database';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAxjJ9OYW66FsyxB55prJO7osAQwQOrMio',
@@ -21,6 +20,8 @@ export const FIREBASE_APP = initializeApp(firebaseConfig);
 export const FIREBASE_AUTH = getAuth(FIREBASE_APP);
 // Get a reference to the database
 export const FIREBASE_DB = getDatabase(FIREBASE_APP);
+// Get a reference to the storage service
+export const FIREBASE_STORAGE = getStorage(FIREBASE_APP);
 
 // For more information on how to access Firebase in your project,
 // see the Firebase documentation: https://firebase.google.com/docs/web/setup#access-firebase

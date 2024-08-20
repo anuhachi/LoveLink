@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { ScrollView, View, TouchableOpacity } from 'react-native';
 import {
   Avatar,
   AvatarBadge,
@@ -25,35 +26,67 @@ import {
   InputField,
   SelectDragIndicatorWrapper,
   SelectDragIndicator,
+  Toast,
+  ToastTitle,
+  useToast,
 } from '@gluestack-ui/themed';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { useWindowDimensions, Image } from 'react-native';
-import { get, ref } from 'firebase/database'; // Firebase Database imports
-import { FIREBASE_DB, FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { useWindowDimensions, Image, Platform } from 'react-native';
+import { get, ref, update, remove } from 'firebase/database'; // Firebase Database imports
+import {
+  FIREBASE_DB,
+  FIREBASE_AUTH,
+  FIREBASE_STORAGE,
+} from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from 'firebase/storage'; // Firebase Storage imports
 import UserProfile from '../../components/Header/UserProfile';
 import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
 import HeaderTabs from '../../components/Header/HeaderTabs';
 import Swiper from 'react-native-swiper';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function Settings() {
+  const router = useRouter(); // Use expo-router's useRouter hook
   const { width } = useWindowDimensions();
   const [user_auth_data, setUserAuthData] = useState(null);
   const [selectedTab, setSelectedTab] = useState('Settings');
   const [userData, setUserData] = useState({
-    name: '',
-    email: '',
-    address: '',
-    gender: '',
-    dob: '',
-    lookingFor: '',
-    maxDistance: '',
+    address: {
+      city: '', // Add default or user-provided values
+      street: '',
+      zip: '',
+    },
+    age: '', // Default or user-provided value
     bio: '',
     description: '',
-    profileImage: '',
-    profileImages: [],
+    gender: '',
+    genderPreference: '',
+    hobby: '',
     interests: [],
+    location: '',
+    matches: {
+      whoILiked: [],
+      whoLikedMe: [],
+    },
+    messages: [],
+    name: '', // Add default or user-provided values
+    profilecomplete: false, // Default value
+    DOB: false, // Default value
+    profileImage: '', // Default or user-provided URL
+    profileImages: [], // Default or user-provided URLs
   });
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+
+  const fileInputRef = useRef(null);
+  const toast = useToast();
 
   useEffect(() => {
     const user = FIREBASE_AUTH.currentUser;
@@ -67,21 +100,13 @@ export default function Settings() {
         .then((snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.val();
-            console.log(data);
-            setUserData({
-              name: data.name || '',
-              email: data.email || '',
-              address: data.address || '',
-              gender: data.gender || '',
-              dob: data.dob || '',
-              lookingFor: data.lookingFor || '',
-              maxDistance: data.maxDistance || '',
-              bio: data.bio || '',
-              description: data.description || '',
-              profileImage: data.profileImage || '',
-              profileImages: data.profileImages || [],
-              interests: data.interests || [],
-            });
+            console.log('Fetched user data:', data);
+            setUserData((prevState) => ({
+              ...prevState,
+              ...data,
+              interests: data.interests || [], // Ensure interests is always an array
+              profileImages: data.profileImages || [], // Ensure profileImages is always an array
+            }));
           } else {
             console.log('No data available');
           }
@@ -93,6 +118,182 @@ export default function Settings() {
       console.log('No user is signed in.');
     }
   }, []);
+
+  // Function to pick and upload image
+  const pickImage = async () => {
+    // Request permissions
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Sorry, we need camera roll permissions to make this work!');
+      return;
+    }
+
+    // Launch image picker
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    console.log('Image picker result:', result);
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      console.log('Picked image URI:', uri);
+
+      try {
+        // Upload the image to Firebase Storage
+        const filename = uri.split('/').pop();
+        const uploadUri =
+          Platform.OS === 'ios' ? uri.replace('file://', '') : uri;
+        const imageRef = storageRef(
+          FIREBASE_STORAGE,
+          `profileImages/${filename}`
+        );
+
+        const response = await fetch(uploadUri);
+        const blob = await response.blob();
+        console.log('Uploading image to Firebase Storage...');
+
+        await uploadBytes(imageRef, blob);
+
+        // Get the image URL and update Firestore
+        const downloadURL = await getDownloadURL(imageRef);
+        console.log('Download URL:', downloadURL);
+        const user = FIREBASE_AUTH.currentUser;
+        if (user) {
+          const uid = user.uid;
+          const userRef = ref(FIREBASE_DB, `/users/${uid}`);
+          const newProfileImages = [...userData.profileImages, downloadURL];
+
+          // Update the user's profileImages array in Firestore
+          await update(userRef, { profileImages: newProfileImages });
+          console.log('Updated profile images in Firestore.');
+
+          // Update state
+          setUserData((prevState) => ({
+            ...prevState,
+            profileImages: newProfileImages,
+          }));
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
+    }
+  };
+
+  const handleDeleteImage = async (imageUri) => {
+    try {
+      // Check if there is only one image left
+      if (userData.profileImages.length <= 1) {
+        // Prevent deletion if there's only one image
+        toast.show({
+          placement: 'top right',
+          render: ({ id }) => {
+            return (
+              <Toast id={id} variant="accent" action="warning">
+                <ToastTitle>You cannot delete the last image left</ToastTitle>
+              </Toast>
+            );
+          },
+        });
+        return;
+      }
+
+      // Create a new array excluding the image to be deleted
+      const updatedImages = userData.profileImages.filter(
+        (img) => img !== imageUri
+      );
+
+      // Get the current user
+      const user = FIREBASE_AUTH.currentUser;
+      if (user) {
+        const uid = user.uid;
+        const userRef = ref(FIREBASE_DB, `/users/${uid}`);
+
+        // Update the user's profileImages array in the database
+        await update(userRef, { profileImages: updatedImages });
+
+        console.log('Removed image from profileImages array in Firestore.');
+
+        // Update local state
+        setUserData((prevState) => ({
+          ...prevState,
+          profileImages: updatedImages,
+        }));
+      }
+    } catch (error) {
+      console.error('Error removing image from profileImages array:', error);
+    }
+  };
+
+  const handleSetProfileImage = async (imageUri) => {
+    try {
+      const user = FIREBASE_AUTH.currentUser;
+      if (user) {
+        const uid = user.uid;
+        const userRef = ref(FIREBASE_DB, `/users/${uid}`);
+        await update(userRef, { profileImage: imageUri });
+        console.log('Updated profile image in Firestore.');
+        setUserData((prevState) => ({
+          ...prevState,
+          profileImage: imageUri,
+        }));
+      }
+    } catch (error) {
+      console.error('Error updating profile image:', error);
+    }
+  };
+
+  // Logout function
+
+  const handleLogout = async () => {
+    try {
+      await FIREBASE_AUTH.signOut(); // Sign out the user
+
+      router.replace('/login'); // Redirect to the login page using expo-router
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
+
+  // Function to update profile data
+  const updateProfileData = async () => {
+    try {
+      const user = FIREBASE_AUTH.currentUser;
+      if (user) {
+        const uid = user.uid;
+        const userRef = ref(FIREBASE_DB, `/users/${uid}`);
+
+        await update(userRef, userData);
+        console.log('Updated profile data in Firestore.');
+      }
+    } catch (error) {
+      console.error('Error updating profile data:', error);
+    }
+  };
+
+  const handleInputChange = (fieldName, value) => {
+    console.log('Field:', fieldName, 'Value:', value);
+    const fields = fieldName.split('.');
+    setUserData((prevState) => {
+      if (fields.length > 1) {
+        return {
+          ...prevState,
+          [fields[0]]: {
+            ...prevState[fields[0]],
+            [fields[1]]: value,
+          },
+        };
+      } else {
+        return {
+          ...prevState,
+          [fieldName]: value,
+        };
+      }
+    });
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -128,139 +329,284 @@ export default function Settings() {
         </Box>
       </Box>
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, flexDirection: 'row' }}
+        contentContainerStyle={{ flex: 1, flexDirection: 'row' }}
       >
         {width > 768 && (
           <Box flex={1}>
             <Swiper
               showsPagination
-              autoplay
               loop
               style={{ width: '100%', height: '100%' }}
+              onIndexChanged={(index) => setSelectedImageIndex(index)}
             >
               {userData.profileImages.map((imageUri, index) => (
-                <Image
-                  key={index}
-                  source={{ uri: imageUri }}
-                  style={{ width: '100%', height: '100%' }}
-                  resizeMode="cover"
-                />
+                <React.Fragment key={imageUri}>
+                  {' '}
+                  {/* Use the imageUri as the key */}
+                  <HStack width="100%">
+                    <Button
+                      m="$1"
+                      flex={1}
+                      variant="outline"
+                      onPress={() => handleDeleteImage(imageUri)}
+                    >
+                      <ButtonText fontSize="$sm" fontWeight="$medium">
+                        Delete The Image
+                      </ButtonText>
+                    </Button>
+                    <Button
+                      m="$1"
+                      flex={1}
+                      variant="outline"
+                      onPress={() => handleSetProfileImage(imageUri)}
+                    >
+                      <ButtonText fontSize="$sm" fontWeight="$medium">
+                        Set as Profile Image
+                      </ButtonText>
+                    </Button>
+                  </HStack>
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                    alt="LoveLinnk"
+                  />
+                </React.Fragment>
               ))}
             </Swiper>
           </Box>
         )}
 
-        <VStack flex={2} p="$4">
-          <Box
-            bg="$primary100"
-            p="$5"
-            flexDirection="row"
-            mb="$4"
-            borderRadius="$md"
-          >
-            <Avatar mr="$4">
-              <AvatarFallbackText fontFamily="$heading">JD</AvatarFallbackText>
-              <AvatarImage
-                source={{
-                  uri:
-                    userData.profileImage || 'https://via.placeholder.com/150',
-                }}
-              />
-              <AvatarBadge bg="green.500" />
-            </Avatar>
-            <VStack>
-              <Heading size="md" fontFamily="$heading" mb="$1">
-                {userData.name || 'Jane Doe'}
-              </Heading>
-              <Text size="sm" fontFamily="$heading">
-                {user_auth_data?.email || 'Missing email'}
-              </Text>
-            </VStack>
-          </Box>
+        <ScrollView>
+          {width < 768 && (
+            <Box flex={1}>
+              <Swiper
+                showsPagination
+                loop
+                style={{ width: '100%', height: '100%' }}
+                onIndexChanged={(index) => setSelectedImageIndex(index)}
+              >
+                {userData.profileImages.map((imageUri, index) => (
+                  <React.Fragment key={imageUri}>
+                    {' '}
+                    {/* Use the imageUri as the key */}
+                    <HStack width="100%">
+                      <Button
+                        m="$1"
+                        flex={1}
+                        onPress={() => handleDeleteImage(imageUri)}
+                      >
+                        <ButtonText fontSize="$sm" fontWeight="$medium">
+                          Delete
+                        </ButtonText>
+                      </Button>
+                      <Button
+                        m="$1"
+                        flex={1}
+                        onPress={() => handleSetProfileImage(imageUri)}
+                      >
+                        <ButtonText fontSize="$sm" fontWeight="$medium">
+                          Set Profile Image
+                        </ButtonText>
+                      </Button>
+                    </HStack>
+                    <Image
+                      source={{ uri: imageUri }}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                      alt="LoveLinnk"
+                    />
+                  </React.Fragment>
+                ))}
+              </Swiper>
+            </Box>
+          )}
 
-          <VStack mb="$4">
-            <Heading size="sm" mb="$3">
-              Personal Information
-            </Heading>
-            <FormControl mb="$4">
-              <Input>
-                <InputField placeholder="Email" value={userData.email} />
-              </Input>
-            </FormControl>
-            <FormControl mb="$4">
-              <Input>
-                <InputField placeholder="Password" secureTextEntry />
-              </Input>
-            </FormControl>
-            <FormControl mb="$4">
-              <Input>
-                <InputField placeholder="Bio" value={userData.bio} />
-              </Input>
-            </FormControl>
-            <FormControl mb="$4">
-              <Input>
-                <InputField
-                  placeholder="Description"
-                  value={userData.description}
+          <VStack flex={2} p="$4">
+            <Box
+              bg="$primary100"
+              p="$5"
+              flexDirection="row"
+              mb="$4"
+              borderRadius="$md"
+            >
+              <Avatar mr="$4">
+                <AvatarFallbackText fontFamily="$heading">
+                  JD
+                </AvatarFallbackText>
+                <AvatarImage
+                  source={{
+                    uri:
+                      userData.profileImage ||
+                      'https://via.placeholder.com/150',
+                  }}
                 />
-              </Input>
-            </FormControl>
-          </VStack>
+                <AvatarBadge bg="green.500" />
+              </Avatar>
 
-          <VStack mb="$4">
-            <Heading size="sm" mb="$3">
-              Preferences
-            </Heading>
-            <FormControl>
-              <Input>
-                <InputField placeholder={userData.name} />
-              </Input>
-            </FormControl>
-            <FormControl mb="$3">
-              <Select>
-                <SelectTrigger>
-                  <SelectInput placeholder="Country" />
-                </SelectTrigger>
-                <SelectPortal>
-                  <SelectBackdrop />
-                  <SelectContent mb="$3">
-                    <SelectDragIndicatorWrapper>
-                      <SelectDragIndicator />
-                    </SelectDragIndicatorWrapper>
-                    <SelectItem label="India" value="India" />
-                    <SelectItem label="Sri Lanka" value="Sri Lanka" />
-                    <SelectItem label="Uganda" value="Uganda" />
-                    <SelectItem label="Japan" value="Japan" />
-                  </SelectContent>
-                </SelectPortal>
-              </Select>
-            </FormControl>
-            <FormControl mb="$4">
-              <Heading size="sm" mb="$2">
-                Interests
-              </Heading>
-              {userData.interests.map((interest, index) => (
-                <Text key={index} mb="$1">
-                  {interest}
+              <VStack>
+                <Heading size="md" fontFamily="$heading" mb="$1">
+                  {userData.name || 'Name is missing must be added'}
+                </Heading>
+                <Text size="sm" fontFamily="$heading">
+                  {user_auth_data?.email || 'Missing email'}
                 </Text>
-              ))}
-            </FormControl>
-            <FormControl mb="$3">
-              <Button bg="$darkBlue600">
-                <ButtonText fontSize="$sm" fontWeight="$medium">
-                  Update your profile Data
-                </ButtonText>
+              </VStack>
+            </Box>
+
+            <VStack mb="$4">
+              <Heading size="sm" mb="$3">
+                Personal Informations
+              </Heading>
+              <FormControl mb="$4">
+                <Input mb="$2">
+                  <InputField
+                    placeholder="name"
+                    value={userData.name}
+                    onChangeText={(text) => handleInputChange('name', text)}
+                  />
+                </Input>
+                <Input>
+                  <InputField
+                    placeholder="Bio"
+                    value={userData.bio}
+                    onChangeText={(text) => handleInputChange('bio', text)}
+                  />
+                </Input>
+              </FormControl>
+              <FormControl mb="$4">
+                <Input>
+                  <InputField
+                    placeholder="Description"
+                    value={userData.description}
+                    onChangeText={(text) =>
+                      handleInputChange('description', text)
+                    }
+                  />
+                </Input>
+              </FormControl>
+              <FormControl mb="$4">
+                <Input>
+                  <InputField
+                    onChangeText={(text) => handleInputChange('hobby', text)}
+                    placeholder="hobby"
+                    value={userData.hobby}
+                  />
+                </Input>
+              </FormControl>
+              <Heading size="sm" mb="$3">
+                Address Information
+              </Heading>
+              <FormControl mb="$4">
+                <Input mb="$2">
+                  <InputField
+                    placeholder="city"
+                    value={userData.address.city}
+                    onChangeText={(text) =>
+                      handleInputChange('address.city', text)
+                    }
+                  />
+                </Input>
+                <Input mb="$2">
+                  <InputField
+                    placeholder="street"
+                    value={userData.address.street}
+                    onChangeText={(text) =>
+                      handleInputChange('address.street', text)
+                    }
+                  />
+                </Input>
+                <Input mb="$2">
+                  <InputField
+                    placeholder="zip"
+                    value={userData.address.zip}
+                    onChangeText={(text) =>
+                      handleInputChange('address.zip', text)
+                    }
+                  />
+                </Input>
+              </FormControl>
+
+              <Heading size="sm" mb="$3">
+                Match information
+              </Heading>
+              <FormControl mb="$4">
+                <Select>
+                  <SelectTrigger mb="$2">
+                    <SelectInput placeholder="Gender" value={userData.gender} />
+                  </SelectTrigger>
+                  <SelectPortal>
+                    <SelectBackdrop />
+                    <SelectContent mb="$3">
+                      <SelectDragIndicatorWrapper>
+                        <SelectDragIndicator />
+                      </SelectDragIndicatorWrapper>
+                      <SelectItem label="Male" value="Male" />
+                      <SelectItem label="Female" value="Female" />
+                      <SelectItem label="Other" value="Other" />
+                    </SelectContent>
+                  </SelectPortal>
+                </Select>
+                <Select>
+                  <SelectTrigger mb="$2">
+                    <SelectInput
+                      placeholder="Gender"
+                      value={userData.genderPreference}
+                    />
+                  </SelectTrigger>
+                  <SelectPortal>
+                    <SelectBackdrop />
+                    <SelectContent mb="$3">
+                      <SelectDragIndicatorWrapper>
+                        <SelectDragIndicator />
+                      </SelectDragIndicatorWrapper>
+                      <SelectItem label="Male" value="Male" />
+                      <SelectItem label="Female" value="Female" />
+                      <SelectItem label="Other" value="Other" />
+                    </SelectContent>
+                  </SelectPortal>
+                </Select>
+              </FormControl>
+            </VStack>
+
+            <VStack mb="$4">
+              <FormControl mb="$4">
+                <Heading size="sm" mt="$2" mb="$2">
+                  Interests
+                </Heading>
+                {userData.interests.map((interest, index) => (
+                  <Input key={index} mb="$1">
+                    <InputField
+                      placeholder="Your interests"
+                      value={interest}
+                      onChangeText={(text) =>
+                        handleInputChange('interests', text)
+                      }
+                    />
+                  </Input>
+                ))}
+              </FormControl>
+
+              <Button mb="$2" bg="$darkBlue600" onPress={pickImage}>
+                <ButtonText>Add An Image</ButtonText>
               </Button>
-            </FormControl>
-            <FormControl>
-              <Button bg="$darkBlue600">
-                <ButtonText fontSize="$sm" fontWeight="$medium">
-                  Logout
-                </ButtonText>
-              </Button>
-            </FormControl>
+              <FormControl mb="$3">
+                <Button bg="$darkBlue600" onPress={updateProfileData}>
+                  <ButtonText fontSize="$sm" fontWeight="$medium">
+                    Update your profile Data
+                  </ButtonText>
+                </Button>
+              </FormControl>
+              <FormControl>
+                <Button onPress={handleLogout} bg="$darkBlue600">
+                  <ButtonText fontSize="$sm" fontWeight="$medium">
+                    Logout
+                  </ButtonText>
+                </Button>
+              </FormControl>
+            </VStack>
           </VStack>
-        </VStack>
+        </ScrollView>
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );

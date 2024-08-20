@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import debounce from 'lodash.debounce';
 import {
   Box,
   Button,
@@ -26,45 +27,76 @@ const tabsData = [
   { title: 'Preferences' },
 ];
 
-const HomestayInformationFold = () => {
+const HomestayInformationFold = ({ filters }) => {
   const [usersList, setUsersList] = useState<any[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentuseruid, setCurrentUserUid] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>({
+    address: { city: '', street: '', zip: '' },
+    age: '',
+    bio: '',
+    description: '',
+    gender: '',
+    genderPreference: '',
+    hobby: '',
+    interests: [],
+    location: '',
+    matches: { whoILiked: [], whoLikedMe: [] },
+    messages: [],
+    name: '',
+    profilecomplete: false,
+    DOB: false,
+    profileImage: '',
+    profileImages: [],
+  });
 
   useEffect(() => {
     const usersRef = ref(FIREBASE_DB, 'users');
 
-    // Real-time listener for users data
     const unsubscribe = onValue(usersRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
         const usersArray = Object.values(data);
-        console.log('Fetched users:', usersArray);
         setUsersList(usersArray);
 
-        // Assuming the current user ID is '6'
-        const currentUserData = FIREBASE_AUTH.currentUser;
-        setCurrentUser(currentUserData);
-      } else {
-        console.log('No users found.');
+        const uid = FIREBASE_AUTH.currentUser?.uid;
+        setCurrentUserUid(uid);
+
+        const currentUserRef = ref(FIREBASE_DB, `users/${uid}`);
+        get(currentUserRef)
+          .then((userSnapshot) => {
+            if (userSnapshot.exists()) {
+              setCurrentUser(userSnapshot.val());
+            } else {
+              console.log('No current user data found.');
+            }
+          })
+          .catch((error) => {
+            console.error('Error fetching current user:', error);
+          });
       }
     });
 
-    // Cleanup listener on component unmount
     return () => unsubscribe();
   }, []);
 
-  if (!currentUser) return null; // Ensure currentUser is loaded before rendering
+  if (!currentUser) return null;
 
   return (
     <Box pb="$8" px="$4" sx={{ '@md': { px: 0 } }}>
       <HomestayInfoTabs tabsData={tabsData} />
-      <TabPanelData usersList={usersList} currentUser={currentUser} />
+      <TabPanelData
+        usersList={usersList}
+        currentUser={currentUser}
+        filters={filters}
+        currentUserUid={currentuseruid}
+      />
     </Box>
   );
 };
 
-const HomestayInfoTabs = ({ tabsData }: any) => {
-  const [activeTab, setActiveTab] = React.useState(tabsData[0]);
+const HomestayInfoTabs = ({ tabsData }) => {
+  const [activeTab, setActiveTab] = useState(tabsData[0]);
+
   return (
     <Box
       borderBottomWidth={1}
@@ -77,7 +109,7 @@ const HomestayInfoTabs = ({ tabsData }: any) => {
       <Box py="$5">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <HStack space="lg" mx="$0.5">
-            {tabsData.map((tab: any) => (
+            {tabsData.map((tab) => (
               <Pressable
                 key={tab.title}
                 my="$0.5"
@@ -121,77 +153,86 @@ const HomestayInfoTabs = ({ tabsData }: any) => {
   );
 };
 
-const TabPanelData = ({
-  usersList,
-  currentUser,
-}: {
-  usersList: any[];
-  currentUser: any;
-}) => {
+const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
   const router = useRouter();
-
-  // Initialize `likes` state with a fallback to an empty array if `whoILiked` is undefined
   const [likes, setLikes] = useState<string[]>(
     currentUser?.matches?.whoILiked || []
   );
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (currentUser) {
-      const { ageFilter, applied } = currentUser.filterApplied || {};
-      if (applied) {
-        const filtered = usersList.filter((user) => {
-          const isWithinAgeRange =
-            user.age >= ageFilter.minAge && user.age <= ageFilter.maxAge;
-          const isNotCurrentUser = user.id !== currentUser.id;
-          return isWithinAgeRange && isNotCurrentUser;
-        });
-        setFilteredUsers(filtered);
-      } else {
-        setFilteredUsers(usersList);
-      }
-    }
-  }, [usersList, currentUser]);
+  console.log(filters)
 
-  const handleLikePress = async (profileId: string) => {
-    if (!profileId || !currentUser?.uid) {
-      console.error('Profile ID or current user ID is undefined.');
-      return;
-    }
+  const debouncedFilterUsers = useCallback(
+    debounce((users, minAge, maxAge) => {
+      const filtered = users.filter((user) => {
+        const isInAgeRange = user.age >= minAge && user.age <= maxAge;
+        const isNotCurrentUser = user.id !== currentUser.id;
+        return isInAgeRange && isNotCurrentUser;
+      });
+      setFilteredUsers(filtered);
+    }, 300),
+    []
+  );
+
+  useEffect(() => {
+    const fetchLikes = async () => {
+      if (currentUser) {
+        const { minAge = 18, maxAge = 60 } = filters || {};
+        if (minAge > maxAge) return;
+  
+        debouncedFilterUsers(usersList, minAge, maxAge);
+  
+        const userLikesRef = ref(
+          FIREBASE_DB,
+          `users/${currentUser.uid}/matches/whoILiked`
+        );
+  
+        const snapshot = await get(userLikesRef);
+  
+        if (snapshot.exists()) {
+          const likesData = snapshot.val();
+          console.log('prima', likesData);
+          setLikes(likesData || []); // Ensure likes are set correctly
+        }
+      }
+    };
+  
+    fetchLikes();
+  }, [usersList, currentUser, filters, debouncedFilterUsers]);
+
+  const handleLikePress = async (profileId) => {
+    if (!profileId || !currentUserUid) return;
 
     const isLiked = likes.includes(profileId);
     const updatedLikes = isLiked
       ? likes.filter((id) => id !== profileId)
       : [...likes, profileId];
 
-    setLikes(updatedLikes);
-
     try {
+      // Update the current user's liked profiles
       const userRef = ref(
         FIREBASE_DB,
-        `users/${currentUser.uid}/matches/whoILiked`
+        `users/${currentUserUid}/matches/whoILiked`
       );
+      await set(userRef, updatedLikes);
+
+      // Update the other user's whoLikedMe list
       const otherUserRef = ref(
         FIREBASE_DB,
         `users/${profileId}/matches/whoLikedMe`
       );
-
-      // Update current user's whoILiked list
-      await set(userRef, updatedLikes);
-
-      // Get other user's whoLikedMe list
       const otherUserSnapshot = await get(otherUserRef);
       const otherUserLikes = otherUserSnapshot.exists()
         ? otherUserSnapshot.val()
         : [];
-
-      // Make sure to filter out undefined values
       const updatedOtherUserLikes = isLiked
-        ? otherUserLikes.filter((id: string) => id !== currentUser.uid)
-        : [...otherUserLikes, currentUser.uid].filter(Boolean);
-
-      // Update the other user's whoLikedMe list
+        ? otherUserLikes.filter((id) => id !== currentUserUid)
+        : [...otherUserLikes, currentUserUid];
       await set(otherUserRef, updatedOtherUserLikes);
+
+      // Sync the likes state
+      console.log('dopo',updatedLikes)  
+      setLikes(updatedLikes);
     } catch (error) {
       console.error('Error updating likes:', error);
     }
@@ -207,8 +248,8 @@ const TabPanelData = ({
         '@lg': { gridTemplateColumns: 'repeat(3, 1fr)' },
       }}
     >
-      {filteredUsers.map((profile, index) => (
-        <Box key={index} sx={{ 'my': '$2', '@lg': { my: 0 } }}>
+      {filteredUsers.map((profile) => (
+        <Box key={profile.id} sx={{ 'my': '$2', '@lg': { my: 0 } }}>
           <Pressable
             w="100%"
             onPress={() => router.push(`/UserProfileDash/${profile.id}`)}
@@ -253,10 +294,7 @@ const TabPanelData = ({
             )}
           </Pressable>
           <Pressable
-            onPress={() => {
-              console.log('Profile ID:', profile.id);
-              handleLikePress(profile.id); // use profile.id instead of currentUser.uid
-            }}
+            onPress={() => handleLikePress(profile.id)}
             position="absolute"
             top={12}
             right={16}

@@ -48,6 +48,17 @@ export default function Tab({ activeTab, setActiveTab }: any) {
     });
   };
 
+  const [filters, setFilters] = useState({
+    minAge: 18,
+    maxAge: 60,
+    genderValues: ['men', 'women'],
+    ageRange: '18-25',
+  });
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <Box w="100%" sx={{ display: 'flex' }}>
@@ -126,7 +137,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
             <Box>
               <MainContentHeader />
               <NewLikesSection />
-              <UsersNearYou />
+              <UsersNearYou filters={filters} />
             </Box>
           </Box>
         </Box>
@@ -134,7 +145,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
 
       <HStack w="100%" display="none" sx={{ '@md': { display: 'flex' } }}>
         <Box w="25%" sx={{ '@md': { width: '25%' } }}>
-          <Sidebar />
+          <Sidebar onFilterChange={handleFilterChange} />
         </Box>
         <ScrollView style={{ flex: 1 }}>
           <Box
@@ -146,7 +157,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
             <Box>
               <MainContentHeader />
               <NewLikesSection />
-              <UsersNearYou />
+              <UsersNearYou filters={filters} />
             </Box>
           </Box>
         </ScrollView>
@@ -164,7 +175,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
           </ModalHeader>
           <ModalBody>
             <ScrollView style={{ flex: 1 }}>
-              <Sidebar />
+              <Sidebar onFilterChange={handleFilterChange} />
             </ScrollView>
           </ModalBody>
           <ModalFooter>

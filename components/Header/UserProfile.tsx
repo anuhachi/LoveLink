@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Avatar,
   AlertDialog,
@@ -21,7 +21,9 @@ import {
   AlertDialogFooter,
 } from '@gluestack-ui/themed';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { FIREBASE_AUTH, FIREBASE_DB } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { ref, onValue } from 'firebase/database'; // For Realtime Database
+// import { doc, getDoc } from 'firebase/firestore'; // Uncomment for Firestore
 import { useRouter } from 'expo-router';
 
 const userMenuItems = [
@@ -49,6 +51,36 @@ const userMenuItems = [
 const UserProfile = () => {
   const [openLogoutAlertDialog, setOpenLogoutAlertDialog] = useState(false);
   const router = useRouter();
+  const [profileImage, setProfileImage] = useState(null); // State to store the profile image URL
+
+  useEffect(() => {
+    const fetchProfileImage = async (uid) => {
+      try {
+        const profileImageRef = ref(FIREBASE_DB, `/users/${uid}/profileImage`); // Adjust path if needed
+        onValue(profileImageRef, (snapshot) => {
+          if (snapshot.exists()) {
+            setProfileImage(snapshot.val());
+          }
+        });
+
+        // For Firestore:
+        // const profileDoc = await getDoc(doc(FIREBASE_DB, 'users', uid));
+        // if (profileDoc.exists()) {
+        //   setProfileImage(profileDoc.data().profileImage);
+        // }
+      } catch (error) {
+        console.error('Error fetching profile image:', error);
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
+      if (user) {
+        fetchProfileImage(user.uid);
+      }
+    });
+
+    return () => unsubscribe(); // Clean up the subscription on component unmount
+  }, []);
 
   const handleClose = () => {
     setOpenLogoutAlertDialog(false);
@@ -95,7 +127,7 @@ const UserProfile = () => {
               <AvatarFallbackText>Henry Stan</AvatarFallbackText>
               <AvatarImage
                 source={{
-                  uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8dXNlcnxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60',
+                  uri: profileImage || 'https://placehold.co/600x400/png', // Use default URL if profileImage is null
                 }}
               />
               <AvatarBadge

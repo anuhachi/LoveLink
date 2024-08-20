@@ -144,6 +144,7 @@ export default function UserProfileDash() {
                   source={{ uri: imageUri }}
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="cover"
+                  alt="LoveLinnk"
                 />
               ))}
             </Swiper>

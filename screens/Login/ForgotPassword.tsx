@@ -22,14 +22,13 @@ import {
   Center,
 } from '@gluestack-ui/themed';
 import GuestLayout from '../../layouts/GuestLayout';
-
+import { sendPasswordResetEmail } from 'firebase/auth'; // Import Firebase functions
+import { FIREBASE_AUTH } from './firebaseConfig'; // Import Firebase Auth
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Keyboard } from 'react-native';
-
 import { AlertTriangle } from 'lucide-react-native';
-
 import StyledExpoRouterLink from '../../components/StyledExpoRouterLink';
 import { router } from 'expo-router';
 
@@ -152,24 +151,31 @@ export default function ForgotPassword() {
   });
 
   const [isEmailFocused, setIsEmailFocused] = useState(false);
-
   const toast = useToast();
 
-  const onSubmit = (_data: SignUpSchemaType) => {
-    toast.show({
-      placement: 'bottom right',
-      render: ({ id }) => {
-        return (
+  const onSubmit = async (data: SignUpSchemaType) => {
+    try {
+      await sendPasswordResetEmail(FIREBASE_AUTH, data.email); // Send password reset email
+      toast.show({
+        placement: 'bottom right',
+        render: ({ id }) => (
           <Toast nativeID={id} variant="accent" action="success">
-            <ToastTitle>OTP sent successfully </ToastTitle>
+            <ToastTitle>Reset link sent to your email</ToastTitle>
           </Toast>
-        );
-      },
-    });
-    reset();
-
-    // Navigate screen to appropriate location
-    router.push('/verify-otp');
+        ),
+      });
+      reset();
+      router.push('/login'); // Navigate to verification screen or another appropriate screen
+    } catch (error) {
+      toast.show({
+        placement: 'bottom right',
+        render: ({ id }) => (
+          <Toast nativeID={id} variant="danger">
+            <ToastTitle>Error sending reset link</ToastTitle>
+          </Toast>
+        ),
+      });
+    }
   };
 
   const handleKeyPress = () => {
@@ -236,8 +242,8 @@ export default function ForgotPassword() {
                 },
               }}
             >
-              Not to worry! Enter email address associated with your account and
-              we'll send a link to reset your password.
+              Not to worry! Enter the email address associated with your account
+              and we'll send a link to reset your password.
             </Text>
           </VStack>
 
@@ -285,7 +291,7 @@ export default function ForgotPassword() {
             </FormControlError>
           </FormControl>
           <Button variant="solid" size="lg" onPress={handleSubmit(onSubmit)}>
-            <ButtonText fontSize="$sm">Send OTP</ButtonText>
+            <ButtonText fontSize="$sm">Send Reset Link</ButtonText>
           </Button>
         </Box>
       </VStack>

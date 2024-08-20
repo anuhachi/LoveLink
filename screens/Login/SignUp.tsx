@@ -42,6 +42,7 @@ import { Keyboard } from 'react-native';
 
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'; // Import Firebase functions
 import { FIREBASE_AUTH } from './firebaseConfig'; // Import Firebase Auth
+import { getDatabase, ref, set } from 'firebase/database'; // Import Realtime Database functions
 
 import { FacebookIcon, GoogleIcon } from './assets/Icons/Social';
 
@@ -163,28 +164,70 @@ const SignUpForm = () => {
   const [pwMatched, setPwMatched] = useState(false);
   const toast = useToast();
 
-  const onSubmit = async (_data: SignUpSchemaType) => {
-    if (_data.password === _data.confirmpassword) {
+  const onSubmit = async (data: SignUpSchemaType) => {
+    if (data.password === data.confirmpassword) {
       try {
-        // Initialize Firebase Auth
-        await createUserWithEmailAndPassword(
+        // Create user with email and password
+        const userCredential = await createUserWithEmailAndPassword(
           FIREBASE_AUTH,
-          _data.email,
-          _data.password
+          data.email,
+          data.password
         );
-        setPwMatched(true);
+
+        // Get the user UID
+        const uid = userCredential.user.uid;
+
+        // Initialize Realtime Database reference
+        const db = getDatabase();
+        const userRef = ref(db, 'users/' + uid);
+
+        // Define user data according to the specified structure
+        const userData = {
+          address: {
+            city: '', // Add default or user-provided values
+            street: '',
+            zip: '',
+          },
+          age: '', // Default or user-provided value
+          bio: '',
+          description: '',
+          gender: '',
+          genderPreference: '',
+          hobby: '',
+          interests: [],
+          location: '',
+          matches: {
+            whoILiked: [0],
+            whoLikedMe: [0],
+          },
+          messages: [],
+          name: '', // Add default or user-provided values
+          profilecomplete: false, // Default value
+          DOB: false, // Default value
+          profileImage: `https://robohash.org/${uid}`, // Default RoboHash URL with user_auth_data UID
+          profileImages: [
+            `https://robohash.org/${uid}`, // Example of additional RoboHash images
+          ],
+        };
+
+        // Set user data in Realtime Database
+        await set(userRef, userData);
+
         toast.show({
           placement: 'bottom right',
           render: ({ id }) => {
             return (
               <Toast id={id} variant="accent" action="success">
-                <ToastTitle>Signed up successfully</ToastTitle>
+                <ToastTitle>
+                  Signed up and user profile created successfully
+                </ToastTitle>
               </Toast>
             );
           },
         });
+
         reset();
-        router.replace('/login'); // Redirect to login page
+        router.replace('/Settings'); // Redirect to login page
       } catch (error: any) {
         toast.show({
           placement: 'bottom right',

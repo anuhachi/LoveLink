@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, ScrollView, SafeAreaView } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { ScrollView, View, TouchableOpacity } from 'react-native';
 import {
   Avatar,
   AvatarBadge,
@@ -10,50 +9,57 @@ import {
   VStack,
   Box,
   Text,
-  View,
-  Fab,
-  FabIcon,
-  FabLabel,
-  Input,
-  InputField,
-  InputIcon,
-  InputSlot,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Heading,
+  Input,
   Button,
+  Select,
+  ButtonText,
+  SelectPortal,
+  FormControl,
+  SelectItem,
+  SelectBackdrop,
+  SelectTrigger,
+  SelectInput,
+  SelectContent,
+  SelectIcon,
   Icon,
+  InputField,
+  SelectDragIndicatorWrapper,
+  SelectDragIndicator,
   Toast,
   ToastTitle,
   useToast,
-  ModalCloseButton,
 } from '@gluestack-ui/themed';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import UserProfile from '../../components/Header/UserProfile';
-import MatchSwipe from '../../components/MatchSwipe';
-import { FIREBASE_AUTH, FIREBASE_DB } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
-import Sidebar from '../../components/Sidebar';
-import HeaderTabs from '../../components/Header/HeaderTabs';
-import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
-import NewLikesSection from '../../components/NewLikesSection';
-import MainContentHeader from '../../components/MainContentHeader';
-import { useWindowDimensions, Image, Platform } from 'react-native';
+import Sidebar from '../components/Sidebar';
+import MatchSwipe from '../components/MatchSwipe';
 import { useRouter } from 'expo-router';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useWindowDimensions, Image, Platform } from 'react-native';
 import { get, ref, update, remove } from 'firebase/database'; // Firebase Database imports
+import {
+  FIREBASE_DB,
+  FIREBASE_AUTH,
+  FIREBASE_STORAGE,
+} from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from 'firebase/storage'; // Firebase Storage imports
+import UserProfile from '../components/Header/UserProfile';
+import LoveLinkLogo from '../components/Header/LoveLinkLogo';
+import HeaderTabs from '../components/Header/HeaderTabs';
+import Swiper from 'react-native-swiper';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function Tab({ activeTab, setActiveTab }: any) {
-  const [selectedTab, setSelectedTab] = useState('Match');
-  const [user, setUser] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-
   const router = useRouter(); // Use expo-router's useRouter hook
   const { width } = useWindowDimensions();
   const [user_auth_data, setUserAuthData] = useState(null);
+  const [selectedTab, setSelectedTab] = useState('Settings');
   const [userData, setUserData] = useState({
     address: {
       city: '', // Add default or user-provided values

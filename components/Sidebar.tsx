@@ -4,13 +4,13 @@ import { VStack, ScrollView } from '@gluestack-ui/themed';
 import FiltersAppliedSection from './SideBar/FiltersAppliedSection';
 import AgeFilter from './SideBar/AgeFilter';
 
-const Sidebar = () => {
+const Sidebar = ({ onFilterChange }) => {
   return (
     <ScrollView style={{ flex: 1 }}>
       <VStack space="xl" py="$6" px="$4">
         {/*<FiltersAppliedSection />*/}
         <VStack space="xl" px="$2">
-          <AgeFilter />
+          <AgeFilter onFilterChange={onFilterChange} />
         </VStack>
       </VStack>
     </ScrollView>

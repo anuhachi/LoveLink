@@ -9,8 +9,10 @@ import {
   Heading,
   Card,
 } from '@gluestack-ui/themed';
-import { FIREBASE_DB } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { FIREBASE_DB, FIREBASE_AUTH } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 import { ref, onValue, update } from 'firebase/database'; // Firebase Database imports
+import { getAuth } from 'firebase/auth'; // Firebase Auth imports
+import { onAuthStateChanged } from 'firebase/auth';
 
 const MatchSwipe = () => {
   return (
@@ -29,159 +31,255 @@ const TabPanelData = () => {
   );
 
   useEffect(() => {
-    const usersRef = ref(FIREBASE_DB, 'users');
+    const unsubscribeAuth = onAuthStateChanged(FIREBASE_AUTH, (user) => {
+      if (user) {
+        const currentUserId = user.uid; // Get the current user's UID
 
-    const unsubscribe = onValue(usersRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        const usersList = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
+        const usersRef = ref(FIREBASE_DB, 'users');
 
-        // Check if the users list has changed before updating state
-        if (JSON.stringify(usersList) !== JSON.stringify(users)) {
-          setUsers(usersList);
+        const unsubscribeDatabase = onValue(usersRef, (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            const usersList = Object.keys(data).map((key) => ({
+              id: key,
+              ...data[key],
+            }));
 
-          const currentUserData = usersList.find((user) => user.id === '14');
-          setCurrentUser(currentUserData);
-          if (usersList.length > 0) {
-            setCurrentViewedUserId(usersList[0].id);
+            // Check if the users list has changed before updating state
+            if (JSON.stringify(usersList) !== JSON.stringify(users)) {
+              setUsers(usersList);
+
+              // Find the current user's data in the list
+              const currentUserData = usersList.find(
+                (user) => user.id === currentUserId
+              );
+              setCurrentUser(currentUserData);
+
+              if (usersList.length > 0) {
+                setCurrentViewedUserId(usersList[0].id);
+              }
+            }
+          } else {
+            console.log('No data available');
           }
-        }
+        });
+
+        return () => unsubscribeDatabase();
       } else {
-        console.log('No data available');
+        console.log('User not authenticated');
       }
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, [users]);
 
   const handleLike = async () => {
     if (currentUser && currentViewedUserId) {
       try {
+        // Ensure whoILiked is treated as an array
+        const whoILiked = Array.isArray(currentUser.matches?.whoILiked)
+          ? currentUser.matches.whoILiked
+          : [];
+
+        // Check if the like is already present
+        if (whoILiked.includes(currentViewedUserId)) {
+          console.log('User already liked');
+          return; // Exit early if the user is already liked
+        }
+
         // Update current user's whoILiked list
         const userRef = ref(
           FIREBASE_DB,
-          `users/${currentUser.id}/matches/whoILiked`
+          `users/${currentUser.id}/matches`
         );
-        const updatedLikes = [
-          ...(currentUser.matches?.whoILiked || []),
-          currentViewedUserId,
-        ];
-        await update(userRef, updatedLikes);
+        const updatedLikes = [...whoILiked, currentViewedUserId];
+        await update(userRef, { whoILiked: updatedLikes });
 
-        // Update the liked user's whoLikedMe list
-        const likedUserRef = ref(
-          FIREBASE_DB,
-          `users/${currentViewedUserId}/matches/whoLikedMe`
-        );
-        await update(
-          likedUserRef,
-          (currentUser.matches?.whoLikedMe || []).concat(currentUser.id)
-        );
+        // Ensure whoLikedMe is treated as an array
+        const likedUser = users.find((user) => user.id === currentViewedUserId);
+        const whoLikedMe = Array.isArray(likedUser?.matches?.whoLikedMe)
+          ? likedUser.matches.whoLikedMe
+          : [];
 
-        console.log('Liked:', currentViewedUserId);
+        // Check if the current user is already in the whoLikedMe list
+        if (!whoLikedMe.includes(currentUser.id)) {
+          // Update the liked user's whoLikedMe list
+          const likedUserRef = ref(
+            FIREBASE_DB,
+            `users/${currentViewedUserId}/matches`
+          );
+          const updatedWhoLikedMe = [...whoLikedMe, currentUser.id];
+          await update(likedUserRef, { whoLikedMe: updatedWhoLikedMe });
+        }
+
+        handleNextUser();
       } catch (error) {
         console.error('Error updating like:', error);
       }
-
-      setCurrentIndex((prevIndex) => prevIndex + 1);
-      setCurrentViewedUserId(users[currentIndex + 1]?.id || null);
+    } else {
+      console.log('Current user or current viewed user ID is missing');
     }
   };
 
   const handleDislike = async () => {
     if (currentUser && currentViewedUserId) {
       try {
-        // Update current user's whoILiked list
-        const userRef = ref(
-          FIREBASE_DB,
-          `users/${currentUser.id}/matches/whoILiked`
-        );
-        const updatedLikes = (currentUser.matches?.whoILiked || []).filter(
-          (id) => id !== currentViewedUserId
-        );
-        await update(userRef, updatedLikes);
+        // Ensure whoILiked is treated as an array
+        const whoILiked = Array.isArray(currentUser.matches?.whoILiked)
+          ? currentUser.matches.whoILiked
+          : [];
 
-        // Update the disliked user's whoLikedMe list
-        const dislikedUserRef = ref(
-          FIREBASE_DB,
-          `users/${currentViewedUserId}/matches/whoLikedMe`
+        // Check if the user is in the whoILiked list before attempting to remove
+        if (whoILiked.includes(currentViewedUserId)) {
+          // Update current user's whoILiked list by removing the disliked user
+          const userRef = ref(
+            FIREBASE_DB,
+            `users/${currentUser.id}/matches`
+          );
+          const updatedLikes = whoILiked.filter(
+            (id) => id !== currentViewedUserId
+          );
+          await update(userRef, { whoILiked: updatedLikes });
+        }
+
+        // Get the disliked user data
+        const dislikedUser = users.find(
+          (user) => user.id === currentViewedUserId
         );
-        await update(
-          dislikedUserRef,
-          (currentUser.matches?.whoLikedMe || []).filter(
+        const whoLikedMe = Array.isArray(dislikedUser?.matches?.whoLikedMe)
+          ? dislikedUser.matches.whoLikedMe
+          : [];
+
+        // Check if the current user is in the disliked user's whoLikedMe list before removing
+        if (whoLikedMe.includes(currentUser.id)) {
+          // Update the disliked user's whoLikedMe list by removing the current user
+          const dislikedUserRef = ref(
+            FIREBASE_DB,
+            `users/${currentViewedUserId}/matches`
+          );
+          const updatedWhoLikedMe = whoLikedMe.filter(
             (id) => id !== currentUser.id
-          )
-        );
+          );
+          await update(dislikedUserRef, { whoLikedMe: updatedWhoLikedMe });
+        }
 
-        console.log('Disliked:', currentViewedUserId);
+        handleNextUser();
       } catch (error) {
         console.error('Error updating dislike:', error);
       }
+    } else {
+      console.log('Current user or current viewed user ID is missing');
+    }
+  };
 
-      setCurrentIndex((prevIndex) => prevIndex + 1);
-      setCurrentViewedUserId(users[currentIndex + 1]?.id || null);
+  const handleNextUser = () => {
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < users.length) {
+      setCurrentIndex(nextIndex);
+      setCurrentViewedUserId(users[nextIndex].id);
+    } else {
+      setCurrentIndex(users.length); // Set index to out-of-bound value to show "No more users"
     }
   };
 
   return (
     <Box>
-      {users.length > 0 && currentIndex < users.length ? (
-        <Box>
-          <Card p="$3" borderRadius="$lg" maxWidth="100%" m="$3">
-            <Image
-              mb="$6"
-              width="100%" // Set image width to full
-              height={400} // Adjust height as needed, or use a ratio
-              borderRadius="$md"
-              source={{
-                uri: users[currentIndex].profileImage, // Replace with actual image URL from user data
-              }}
-              resizeMode="cover" // Adjust image scaling if needed
-            />
-            <Text
-              fontSize="$sm"
-              fontStyle="normal"
-              fontFamily="$heading"
-              fontWeight="$normal"
-              lineHeight="$sm"
-              mb="$2"
-              sx={{
-                color: '$textLight700',
-                _dark: {
-                  color: '$textDark200',
-                },
-              }}
-            >
-              {users[currentIndex].interests.join(', ')}{' '}
-            </Text>
-            <VStack mb="$6">
-              <Heading size="md" fontFamily="$heading" mb="$4">
-                {users[currentIndex].name}
-              </Heading>
-              <Text size="sm" fontFamily="$heading">
-                {users[currentIndex].bio}
-              </Text>
-            </VStack>
-          </Card>
+      {users.length > 0 ? (
+        users.map((user, index) => (
+          <Box
+            key={user.id}
+            display={index === currentIndex ? 'block' : 'none'}
+          >
+            <Card p="$3" borderRadius="$lg" m="$3" >
+            <Box
+        mb="$5"
+        sx={{
+          flexDirection: "column",
+          "@sm": {
+            mb: "$6",
+            flexDirection: "row",
+          },
+        }}
+      >
+              <Image
+                mb="$3"
+                width="100%" // Set image width to full
+                borderRadius="$md"
+                alt="LoveLinnk"
+                sx={{
+                  width: "$full",
+                  height: 300,
+                  "@md": {
+                    width: 300,
+                    height: 300,
+                  },
+                }}
+                source={{
+                  uri: user.profileImage, // Replace with actual image URL from user data
+                }}
+                resizeMode="cover" // Adjust image scaling if needed
+              />
+              <Image
+                ml="$3"
+                width="100%" // Set image width to full
+                borderRadius="$md"
+                alt="LoveLinnk"
+                sx={{
+                  width: "$full",
+                  display: 'none',
+                  height: 300,
+                  "@md": {
+                    display: 'flex',  
+                    width: 300,
+                    height: 300,
+                  },
+                }}
+                source={{
+                  uri: user.profileImage, // Replace with actual image URL from user data
+                }}
+                resizeMode="cover" // Adjust image scaling if needed
+              />
+              </Box>
+              <Text
+                fontSize="$sm"
+                fontStyle="normal"
+                fontFamily="$heading"
+                fontWeight="$normal"
+                lineHeight="$sm"
+                mb="$2"
+                sx={{
+                  color: '$textLight700',
+                  _dark: {
+                    color: '$textDark200',
+                  },
+                }}
+              ></Text>
+              <VStack mb="$6">
+                <Heading size="md" fontFamily="$heading" mb="$4">
+                  {user.name}
+                </Heading>
+                <Text size="sm" fontFamily="$heading">
+                  {user.bio}
+                </Text>
+              </VStack>
+            </Card>
 
-          <HStack mt="$2" mb="$5" width="100%">
-            <Button
-              onPress={handleDislike}
-              variant="outline"
-              flex={1}
-              ml="$2"
-              mr="$2"
-            >
-              <Text>Dislike</Text>
-            </Button>
-            <Button onPress={handleLike} flex={1} ml="$2" mr="$2">
-              <Text style={{ color: 'white' }}>Like</Text>
-            </Button>
-          </HStack>
-        </Box>
+            <HStack mt="$2" mb="$5" width="100%">
+              <Button
+                onPress={handleDislike}
+                variant="outline"
+                flex={1}
+                ml="$2"
+                mr="$2"
+              >
+                <Text>Dislike</Text>
+              </Button>
+              <Button onPress={handleLike} flex={1} ml="$2" mr="$2">
+                <Text style={{ color: 'white' }}>Like</Text>
+              </Button>
+            </HStack>
+          </Box>
+        ))
       ) : (
         <Text>No more users to show</Text>
       )}

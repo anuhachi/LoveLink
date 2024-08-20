@@ -14,11 +14,9 @@ import {
   SliderFilledTrack,
   SliderThumb,
 } from '@gluestack-ui/themed';
-import { FIREBASE_DB, FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
-import { ref, onValue, set } from 'firebase/database'; // Firebase Database imports
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
-const AgeFilter = () => {
+const AgeFilter = ({ onFilterChange }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [minAge, setMinAge] = useState(18);
   const [maxAge, setMaxAge] = useState(60);
@@ -39,27 +37,11 @@ const AgeFilter = () => {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (userId) {
-      const filtersRef = ref(FIREBASE_DB, `users/${userId}/filterApplied`);
-      onValue(filtersRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          setMinAge(data.ageFilter.minAge || 18);
-          setMaxAge(data.ageFilter.maxAge || 60);
-          setGenderValues(data.genderValues || ['men', 'women']);
-          setAgeRange(data.ageRange || '18-25');
-        }
-      });
-    }
-  }, [userId]);
-
   const handleSliderChange = (min: number, max: number) => {
     setMinAge(min);
     setMaxAge(max);
-    if (userId) {
-      updateFirebaseFilters(min, max, genderValues, ageRange);
-    }
+    onFilterChange({ minAge: min, maxAge: max, genderValues, ageRange });
+    console.log();
   };
 
   const handleAgeRangeChange = (value: string) => {
@@ -68,29 +50,20 @@ const AgeFilter = () => {
       (option) => option.label === value
     );
     if (selectedRange) {
-      handleSliderChange(selectedRange.range[0], selectedRange.range[1]);
+      const [min, max] = selectedRange.range;
+      handleSliderChange(min, max); // Update minAge and maxAge
     }
   };
 
-  const updateFirebaseFilters = (minAge: number, maxAge: number, genderValues: string[], ageRange: string) => {
-    if (userId) {
-      const filtersRef = ref(FIREBASE_DB, `users/${userId}/filterApplied`);
-      set(filtersRef, {
-        ageFilter: {
-          minAge: minAge,
-          maxAge: maxAge,
-        },
-        applied: true,
-        genderValues: genderValues,
-        ageRange: ageRange,
-      });
-    }
+  const handleGenderChange = (values: string[]) => {
+    setGenderValues(values);
+    onFilterChange({ minAge, maxAge, genderValues: values, ageRange });
   };
 
   const genderOptions = [
-    { label: 'Men', value: 'men' },
-    { label: 'Women', value: 'women' },
-    { label: 'Non-binary', value: 'nonBinary' },
+    { label: 'Men', value: 'male' },
+    { label: 'Women', value: 'female' },
+    { label: 'Non-binary', value: 'other' },
   ];
 
   const ageRangeOptions = [
@@ -99,10 +72,6 @@ const AgeFilter = () => {
     { label: '36-45', range: [36, 45] },
     { label: '46-60', range: [46, 60] },
   ];
-
-  if (!userId) {
-    return <Text>Please log in to view this content.</Text>;
-  }
 
   return (
     <VStack space="md">
@@ -166,12 +135,7 @@ const AgeFilter = () => {
 
       <RadioGroup
         value={genderValues}
-        onChange={(values) => {
-          setGenderValues(values);
-          if (userId) {
-            updateFirebaseFilters(minAge, maxAge, values, ageRange);
-          }
-        }}
+        onChange={handleGenderChange}
         aria-label="gender filter group"
         mt="$3"
       >

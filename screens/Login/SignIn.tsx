@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import {
   Center,
   Button,
@@ -343,6 +344,48 @@ function MobileHeader() {
 }
 
 const Main = () => {
+  const toast = useToast();
+  const router = useRouter();
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(FIREBASE_AUTH, provider);
+
+      // Google access token can be used for further integration if needed
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+      const user = result.user;
+
+      // Handle success - show a success message
+      toast.show({
+        placement: 'bottom right',
+        render: ({ id }) => (
+          <Toast id={id} variant="accent" action="success">
+            <ToastTitle>Signed in with Google successfully</ToastTitle>
+          </Toast>
+        ),
+      });
+
+      // Redirect to /setting
+      router.replace('/setting');
+    } catch (error) {
+      // Handle errors and show error message
+      toast.show({
+        placement: 'bottom right',
+        render: ({ id }) => (
+          <Toast id={id} variant="accent" action="error">
+            <ToastTitle>
+              {error.message || 'An error occurred during Google sign-in'}
+            </ToastTitle>
+          </Toast>
+        ),
+      });
+
+      // Redirect to /setting even in case of an error
+      router.replace('/setting');
+    }
+  };
+
   return (
     <>
       <Box sx={{ '@md': { display: 'none' } }}>
@@ -414,7 +457,11 @@ const Main = () => {
             </Button>
           </Link>
           <Link href="">
-            <Button action="secondary" variant="link" onPress={() => {}}>
+            <Button
+              action="secondary"
+              variant="link"
+              onPress={handleGoogleSignIn}
+            >
               <ButtonIcon as={GoogleIcon} />
             </Button>
           </Link>
