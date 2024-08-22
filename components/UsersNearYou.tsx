@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import debounce from 'lodash.debounce';
 import {
   Box,
   Button,
@@ -160,45 +159,43 @@ const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
   );
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
 
-  console.log(filters)
-
-  const debouncedFilterUsers = useCallback(
-    debounce((users, minAge, maxAge) => {
+  const filterUsers = useCallback(
+    (users, minAge, maxAge, gender) => {
       const filtered = users.filter((user) => {
         const isInAgeRange = user.age >= minAge && user.age <= maxAge;
+        const matchesGender = gender ? user.gender === gender : true;
         const isNotCurrentUser = user.id !== currentUser.id;
-        return isInAgeRange && isNotCurrentUser;
+        return isInAgeRange && matchesGender && isNotCurrentUser;
       });
       setFilteredUsers(filtered);
-    }, 300),
-    []
+    },
+    [currentUser]
   );
 
   useEffect(() => {
     const fetchLikes = async () => {
       if (currentUser) {
-        const { minAge = 18, maxAge = 60 } = filters || {};
+        const { minAge = 18, maxAge = 60, gender } = filters || {};
         if (minAge > maxAge) return;
-  
-        debouncedFilterUsers(usersList, minAge, maxAge);
-  
+
+        filterUsers(usersList, minAge, maxAge, gender);
+
         const userLikesRef = ref(
           FIREBASE_DB,
           `users/${currentUser.uid}/matches/whoILiked`
         );
-  
+
         const snapshot = await get(userLikesRef);
-  
+
         if (snapshot.exists()) {
           const likesData = snapshot.val();
-          console.log('prima', likesData);
-          setLikes(likesData || []); // Ensure likes are set correctly
+          setLikes(likesData || []);
         }
       }
     };
-  
+
     fetchLikes();
-  }, [usersList, currentUser, filters, debouncedFilterUsers]);
+  }, [usersList, currentUser, filters, filterUsers]);
 
   const handleLikePress = async (profileId) => {
     if (!profileId || !currentUserUid) return;
@@ -231,7 +228,7 @@ const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
       await set(otherUserRef, updatedOtherUserLikes);
 
       // Sync the likes state
-      console.log('dopo',updatedLikes)  
+      console.log('dopo', updatedLikes);
       setLikes(updatedLikes);
     } catch (error) {
       console.error('Error updating likes:', error);

@@ -121,6 +121,7 @@ function MobileScreenImage() {
         w="$48"
         resizeMode="contain"
         alignSelf="center"
+        alt="Alternate Text"
       />
       <Image
         sx={{
@@ -135,6 +136,7 @@ function MobileScreenImage() {
         w="$48"
         resizeMode="contain"
         alignSelf="center"
+        alt="Alternate Text"
       />
     </Center>
   );

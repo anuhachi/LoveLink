@@ -11,11 +11,11 @@ import { List } from 'lucide-react-native';
 
 const MainContentHeader = () => {
   return (
-    <Box pt="$3" pb="$2.5" px="$4" sx={{ '@md': { px: 0  } }}>
+    <Box pt="$3" pb="$2.5" px="$4" sx={{ '@md': { px: 0 } }}>
       <HStack w="100%" alignItems="center" justifyContent="space-between">
         <Heading size="xl">New Likes this week</Heading>
         {/* Hidden for mobile screens */}
-        <Button
+        {/*<Button
           display="none"
           sx={{
             '@md': {
@@ -26,7 +26,7 @@ const MainContentHeader = () => {
           variant="outline"
           action="secondary"
         >
-          <ButtonIcon as={List} />
+         <ButtonIcon as={List} />
           <ButtonText
             pl="$2"
             sx={{
@@ -39,8 +39,8 @@ const MainContentHeader = () => {
             }}
           >
             List your place
-          </ButtonText>
-        </Button>
+          </ButtonText> 
+        </Button>*/}
       </HStack>
     </Box>
   );

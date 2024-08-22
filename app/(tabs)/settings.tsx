@@ -29,6 +29,12 @@ import {
   Toast,
   ToastTitle,
   useToast,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
 } from '@gluestack-ui/themed';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -58,6 +64,7 @@ export default function Settings() {
   const { width } = useWindowDimensions();
   const [user_auth_data, setUserAuthData] = useState(null);
   const [selectedTab, setSelectedTab] = useState('Settings');
+  const [showModalUncomplite, setShowModalUncomplite] = useState(false);
   const [userData, setUserData] = useState({
     address: {
       city: '', // Add default or user-provided values
@@ -107,6 +114,8 @@ export default function Settings() {
               interests: data.interests || [], // Ensure interests is always an array
               profileImages: data.profileImages || [], // Ensure profileImages is always an array
             }));
+
+            checkIncompleteFields(data); // Call the function to check incomplete fields
           } else {
             console.log('No data available');
           }
@@ -118,6 +127,14 @@ export default function Settings() {
       console.log('No user is signed in.');
     }
   }, []);
+
+  // Function to check for incomplete fields
+  const checkIncompleteFields = (data) => {
+    if (!data.name || !data.bio || !data.description) {
+      console.log('Some fields are incomplete');
+      setShowModalUncomplite(true);
+    }
+  };
 
   // Function to pick and upload image
   const pickImage = async () => {
@@ -177,8 +194,31 @@ export default function Settings() {
             profileImages: newProfileImages,
           }));
         }
+
+        toast.show({
+          placement: 'top right',
+
+          render: ({ id }) => {
+            return (
+              <Toast id={id} variant="success">
+                <ToastTitle>Image uploaded successfully!</ToastTitle>
+              </Toast>
+            );
+          },
+        });
       } catch (error) {
         console.error('Error uploading image:', error);
+        toast.show({
+          placement: 'top right',
+
+          render: ({ id }) => {
+            return (
+              <Toast id={id} variant="error">
+                <ToastTitle>Image upload failed. Try again!</ToastTitle>
+              </Toast>
+            );
+          },
+        });
       }
     }
   };
@@ -217,6 +257,18 @@ export default function Settings() {
 
         console.log('Removed image from profileImages array in Firestore.');
 
+        toast.show({
+          placement: 'top right',
+
+          render: ({ id }) => {
+            return (
+              <Toast id={id} variant="success">
+                <ToastTitle>Image deleted successfully!</ToastTitle>
+              </Toast>
+            );
+          },
+        });
+
         // Update local state
         setUserData((prevState) => ({
           ...prevState,
@@ -225,6 +277,18 @@ export default function Settings() {
       }
     } catch (error) {
       console.error('Error removing image from profileImages array:', error);
+
+      toast.show({
+        placement: 'top right',
+
+        render: ({ id }) => {
+          return (
+            <Toast id={id} variant="error">
+              <ToastTitle>Failed to delete image. Try again!</ToastTitle>
+            </Toast>
+          );
+        },
+      });
     }
   };
 
@@ -528,10 +592,13 @@ export default function Settings() {
               </FormControl>
 
               <Heading size="sm" mb="$3">
-                Match information
+                Your Gender
               </Heading>
-              <FormControl mb="$4">
-                <Select>
+              <FormControl mb="$2">
+                <Select
+                  value={userData.gender} // Bind the selected value
+                  onValueChange={(value) => handleInputChange('gender', value)} // Handle value change
+                >
                   <SelectTrigger mb="$2">
                     <SelectInput placeholder="Gender" value={userData.gender} />
                   </SelectTrigger>
@@ -541,13 +608,21 @@ export default function Settings() {
                       <SelectDragIndicatorWrapper>
                         <SelectDragIndicator />
                       </SelectDragIndicatorWrapper>
-                      <SelectItem label="Male" value="Male" />
-                      <SelectItem label="Female" value="Female" />
+                      <SelectItem label="Male" value="male" />
+                      <SelectItem label="Female" value="female" />
                       <SelectItem label="Other" value="Other" />
                     </SelectContent>
                   </SelectPortal>
                 </Select>
-                <Select>
+                <Heading size="sm" mb="$3">
+                  Looking for
+                </Heading>
+                <Select
+                  value={userData.genderPreference} // Bind the selected value
+                  onValueChange={(value) =>
+                    handleInputChange('genderPreference', value)
+                  } // Handle value change
+                >
                   <SelectTrigger mb="$2">
                     <SelectInput
                       placeholder="Gender"
@@ -560,8 +635,8 @@ export default function Settings() {
                       <SelectDragIndicatorWrapper>
                         <SelectDragIndicator />
                       </SelectDragIndicatorWrapper>
-                      <SelectItem label="Male" value="Male" />
-                      <SelectItem label="Female" value="Female" />
+                      <SelectItem label="Male" value="male" />
+                      <SelectItem label="Female" value="female" />
                       <SelectItem label="Other" value="Other" />
                     </SelectContent>
                   </SelectPortal>
@@ -607,6 +682,33 @@ export default function Settings() {
             </VStack>
           </VStack>
         </ScrollView>
+        {/* Modal Component */}
+        <Modal
+          isOpen={showModalUncomplite}
+          onClose={() => setShowModalUncomplite(false)} // Ensure onClose properly updates state
+        >
+          <ModalContent>
+            <ModalHeader>
+              <Heading size="lg">Complite your profile!!</Heading>
+              <ModalCloseButton></ModalCloseButton>
+            </ModalHeader>
+            <ModalBody>
+              <Text>Some data are incomplte</Text>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                bg="$darkBlue600"
+                size="sm"
+                mr="$3"
+                onPress={() => setShowModalUncomplite(false)} // Ensure button closes the modal
+              >
+                <ButtonText fontSize="$sm" fontWeight="$medium">
+                  Close
+                </ButtonText>
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );

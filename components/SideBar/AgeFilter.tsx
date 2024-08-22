@@ -20,7 +20,7 @@ const AgeFilter = ({ onFilterChange }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [minAge, setMinAge] = useState(18);
   const [maxAge, setMaxAge] = useState(60);
-  const [genderValues, setGenderValues] = useState<string[]>(['men', 'women']);
+  const [gender, setGender] = useState<string>('male'); // Change to a single string value
   const [ageRange, setAgeRange] = useState<string>('18-25');
 
   useEffect(() => {
@@ -40,8 +40,7 @@ const AgeFilter = ({ onFilterChange }) => {
   const handleSliderChange = (min: number, max: number) => {
     setMinAge(min);
     setMaxAge(max);
-    onFilterChange({ minAge: min, maxAge: max, genderValues, ageRange });
-    console.log();
+    onFilterChange({ minAge: min, maxAge: max, gender, ageRange });
   };
 
   const handleAgeRangeChange = (value: string) => {
@@ -55,9 +54,9 @@ const AgeFilter = ({ onFilterChange }) => {
     }
   };
 
-  const handleGenderChange = (values: string[]) => {
-    setGenderValues(values);
-    onFilterChange({ minAge, maxAge, genderValues: values, ageRange });
+  const handleGenderChange = (value: string) => {
+    setGender(value);
+    onFilterChange({ minAge, maxAge, gender: value, ageRange });
   };
 
   const genderOptions = [
@@ -83,7 +82,7 @@ const AgeFilter = ({ onFilterChange }) => {
       <VStack space="md" w="100%">
         <Text>Min Age: {minAge}</Text>
         <Slider
-          minValue={0}
+          minValue={18}
           maxValue={60}
           w="100%"
           value={minAge}
@@ -122,7 +121,7 @@ const AgeFilter = ({ onFilterChange }) => {
           Filter by Age Range
         </Heading>
         <VStack space="sm">
-          {ageRangeOptions.map(({ label, range }) => (
+          {ageRangeOptions.map(({ label }) => (
             <Radio value={label} size="sm" key={label} aria-label={label}>
               <RadioIndicator mr="$2">
                 <RadioIcon as={CircleIcon} />
@@ -134,7 +133,7 @@ const AgeFilter = ({ onFilterChange }) => {
       </RadioGroup>
 
       <RadioGroup
-        value={genderValues}
+        value={gender}
         onChange={handleGenderChange}
         aria-label="gender filter group"
         mt="$3"

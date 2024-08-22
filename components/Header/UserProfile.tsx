@@ -123,9 +123,10 @@ const UserProfile = () => {
         onSelectionChange={(e: any) => handleSelectionChange(e.currentKey)}
         trigger={({ ...triggerProps }) => (
           <Pressable {...triggerProps}>
-            <Avatar size="sm" bg="$backgroundLight600">
+            <Avatar size="md" bg="$backgroundLight600">
               <AvatarFallbackText>Henry Stan</AvatarFallbackText>
               <AvatarImage
+                alt={"Henry Stan"}
                 source={{
                   uri: profileImage || 'https://placehold.co/600x400/png', // Use default URL if profileImage is null
                 }}

@@ -59,6 +59,8 @@ export default function Tab({ activeTab, setActiveTab }: any) {
     setFilters(newFilters);
   };
 
+  
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <Box w="100%" sx={{ display: 'flex' }}>

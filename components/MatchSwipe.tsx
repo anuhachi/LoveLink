@@ -6,11 +6,24 @@ import {
   Text,
   Image,
   VStack,
+  Avatar,
+  AlertDialog,
+  AvatarFallbackText,
+  AvatarImage,
+  AvatarBadge,
+  Divider,
+  ButtonText,
   Heading,
   Card,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
 } from '@gluestack-ui/themed';
 import { FIREBASE_DB, FIREBASE_AUTH } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
-import { ref, onValue, update } from 'firebase/database'; // Firebase Database imports
+import { ref, onValue, update, set } from 'firebase/database'; // Firebase Database imports
 import { getAuth } from 'firebase/auth'; // Firebase Auth imports
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -25,6 +38,7 @@ const MatchSwipe = () => {
 const TabPanelData = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showModal, setShowModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentViewedUserId, setCurrentViewedUserId] = useState<string | null>(
     null
@@ -73,6 +87,39 @@ const TabPanelData = () => {
     return () => unsubscribeAuth();
   }, [users]);
 
+  const CreateNewChat = async (userId1: string, userId2: string) => {
+    try {
+      // Function to generate a unique chat ID based on the user IDs
+      const generateChatId = (userId1: string, userId2: string) => {
+        const [firstId, secondId] = [userId1, userId2].sort();
+        return `${firstId}_${secondId}`;
+      };
+
+      const chatId = generateChatId(userId1, userId2);
+
+      // Reference to the chat in the Firebase database
+      const chatRef = ref(FIREBASE_DB, `chats/${chatId}`);
+
+      // Data for the new chat
+      const chatData = {
+        chatId,
+        participants: {
+          [userId1]: true,
+          [userId2]: true,
+        },
+        messages: [],
+        createdAt: new Date().toISOString(),
+      };
+
+      // Save the new chat in the database
+      await set(chatRef, chatData);
+
+      console.log('New chat created successfully:', chatId);
+    } catch (error) {
+      console.error('Error creating new chat:', error);
+    }
+  };
+
   const handleLike = async () => {
     if (currentUser && currentViewedUserId) {
       try {
@@ -81,17 +128,8 @@ const TabPanelData = () => {
           ? currentUser.matches.whoILiked
           : [];
 
-        // Check if the like is already present
-        if (whoILiked.includes(currentViewedUserId)) {
-          console.log('User already liked');
-          return; // Exit early if the user is already liked
-        }
-
         // Update current user's whoILiked list
-        const userRef = ref(
-          FIREBASE_DB,
-          `users/${currentUser.id}/matches`
-        );
+        const userRef = ref(FIREBASE_DB, `users/${currentUser.id}/matches`);
         const updatedLikes = [...whoILiked, currentViewedUserId];
         await update(userRef, { whoILiked: updatedLikes });
 
@@ -112,7 +150,16 @@ const TabPanelData = () => {
           await update(likedUserRef, { whoLikedMe: updatedWhoLikedMe });
         }
 
-        handleNextUser();
+        // Check for a mutual match
+        if (whoLikedMe.includes(currentUser.id)) {
+          // Both users have liked each other, show the modal
+          setShowModal(true);
+          CreateNewChat(currentUser.id, currentViewedUserId);
+          handleNextUser();
+        } else {
+          // Proceed to the next user if no mutual match
+          handleNextUser();
+        }
       } catch (error) {
         console.error('Error updating like:', error);
       }
@@ -132,10 +179,7 @@ const TabPanelData = () => {
         // Check if the user is in the whoILiked list before attempting to remove
         if (whoILiked.includes(currentViewedUserId)) {
           // Update current user's whoILiked list by removing the disliked user
-          const userRef = ref(
-            FIREBASE_DB,
-            `users/${currentUser.id}/matches`
-          );
+          const userRef = ref(FIREBASE_DB, `users/${currentUser.id}/matches`);
           const updatedLikes = whoILiked.filter(
             (id) => id !== currentViewedUserId
           );
@@ -190,99 +234,174 @@ const TabPanelData = () => {
             key={user.id}
             display={index === currentIndex ? 'block' : 'none'}
           >
-            <Card p="$3" borderRadius="$lg" m="$3" >
-            <Box
-        mb="$5"
-        sx={{
-          flexDirection: "column",
-          "@sm": {
-            mb: "$6",
-            flexDirection: "row",
-          },
-        }}
-      >
-              <Image
-                mb="$3"
-                width="100%" // Set image width to full
-                borderRadius="$md"
-                alt="LoveLinnk"
-                sx={{
-                  width: "$full",
-                  height: 300,
-                  "@md": {
-                    width: 300,
-                    height: 300,
-                  },
-                }}
-                source={{
-                  uri: user.profileImage, // Replace with actual image URL from user data
-                }}
-                resizeMode="cover" // Adjust image scaling if needed
-              />
-              <Image
-                ml="$3"
-                width="100%" // Set image width to full
-                borderRadius="$md"
-                alt="LoveLinnk"
-                sx={{
-                  width: "$full",
-                  display: 'none',
-                  height: 300,
-                  "@md": {
-                    display: 'flex',  
-                    width: 300,
-                    height: 300,
-                  },
-                }}
-                source={{
-                  uri: user.profileImage, // Replace with actual image URL from user data
-                }}
-                resizeMode="cover" // Adjust image scaling if needed
-              />
+            <Card p="$3" borderRadius="$lg" maxWidth={600} m="$1">
+              <Box flexDirection="row">
+                <Avatar mr="$4">
+                  <AvatarFallbackText fontFamily="$heading">
+                    JD
+                  </AvatarFallbackText>
+                  <AvatarImage
+                    source={{
+                      uri: user.profileImage,
+                    }}
+                  />
+                </Avatar>
+                <VStack>
+                  <Heading size="md" fontFamily="$heading" mb="$1">
+                    {user.name}
+                  </Heading>
+                  <Text size="sm" fontFamily="$heading">
+                    {user.age} years old{' '}
+                  </Text>
+                </VStack>
               </Box>
-              <Text
-                fontSize="$sm"
-                fontStyle="normal"
-                fontFamily="$heading"
-                fontWeight="$normal"
-                lineHeight="$sm"
-                mb="$2"
+              <Box
+                my="$5"
                 sx={{
-                  color: '$textLight700',
-                  _dark: {
-                    color: '$textDark200',
+                  'flexDirection': 'column',
+                  '@sm': {
+                    my: '$6',
+                    flexDirection: 'row',
                   },
                 }}
-              ></Text>
-              <VStack mb="$6">
-                <Heading size="md" fontFamily="$heading" mb="$4">
-                  {user.name}
-                </Heading>
+              >
                 <Text size="sm" fontFamily="$heading">
                   {user.bio}
                 </Text>
-              </VStack>
-            </Card>
-
-            <HStack mt="$2" mb="$5" width="100%">
-              <Button
-                onPress={handleDislike}
-                variant="outline"
-                flex={1}
-                ml="$2"
-                mr="$2"
+              </Box>
+              <Box
+                mb="$5"
+                sx={{
+                  'flexDirection': 'column',
+                  '@sm': {
+                    mb: '$6',
+                    flexDirection: 'row',
+                  },
+                }}
               >
-                <Text>Dislike</Text>
+                {user.profileImages && user.profileImages.length > 0 ? (
+                  <Box
+                    mb="$5"
+                    sx={{
+                      'flexDirection': 'column',
+                      '@sm': {
+                        mb: '$6',
+                        flexDirection: 'row',
+                      },
+                    }}
+                  >
+                    {/* First Image */}
+                    <Image
+                      mb="$3"
+                      borderRadius="$md"
+                      alt={`${user.name}'s profile image`} // Add alt prop here
+                      sx={{
+                        'width': '$full',
+                        'height': 140,
+                        '@sm': {
+                          mb: '$0',
+                          mr: '$3',
+                          width: 200,
+                          height: 200,
+                        },
+                      }}
+                      source={{
+                        uri: user.profileImages[0], // Display the first image in the array
+                      }}
+                    />
+                    {/* Second Image, if available */}
+                    {user.profileImages.length > 1 && (
+                      <Image
+                        mb="$3"
+                        borderRadius="$md"
+                        alt={`${user.name}'s profile image`} // Add alt prop here
+                        sx={{
+                          'width': '$full',
+                          'height': 140,
+                          '@sm': {
+                            mb: '$0',
+                            mr: '$3',
+                            width: 200,
+                            height: 200,
+                          },
+                        }}
+                        source={{
+                          uri: user.profileImages[1], // Display the second image in the array
+                        }}
+                      />
+                    )}
+                  </Box>
+                ) : (
+                  <Image
+                    mb="$3"
+                    borderRadius="$md"
+                    sx={{
+                      'width': '$full',
+                      'height': 140,
+                      '@sm': {
+                        mb: '$0',
+                        mr: '$3',
+                        width: 150,
+                        height: 154,
+                      },
+                    }}
+                    alt={`${user.name}'s profile image`} // Add alt prop here
+                    source={{
+                      uri: 'https://default-image-url.com', // Fallback image if no profileImages are available
+                    }}
+                  />
+                )}
+              </Box>
+              <Button onPress={handleLike} mb="$2" py="$2" px="$4">
+                <ButtonText size="sm">Like</ButtonText>
               </Button>
-              <Button onPress={handleLike} flex={1} ml="$2" mr="$2">
-                <Text style={{ color: 'white' }}>Like</Text>
+              <Button onPress={handleDislike} variant="outline" py="$2" px="$4">
+                <ButtonText size="sm">Dislike</ButtonText>
               </Button>
-            </HStack>
+            </Card>
           </Box>
         ))
       ) : (
         <Text>No more users to show</Text>
       )}
+
+      {/* Modal Component */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)} // Ensure onClose properly updates state
+      >
+        <ModalContent>
+          <ModalHeader>
+            <Heading size="lg">its a match!</Heading>
+            <ModalCloseButton></ModalCloseButton>
+          </ModalHeader>
+          <ModalBody>
+            <Text>You have a new compatibility</Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              bg="$darkBlue600"
+              size="sm"
+              mr="$3"
+              onPress={() => setShowModal(false)} // Ensure button closes the modal
+            >
+              <ButtonText fontSize="$sm" fontWeight="$medium">
+                Close
+              </ButtonText>
+            </Button>
+            <Button
+              bg="$darkBlue600"
+              size="sm"
+              mr="$3"
+              onPress={() => setShowModal(false)} // Ensure button closes the modal
+            >
+              <ButtonText fontSize="$sm" fontWeight="$medium">
+                Go to Chat
+              </ButtonText>
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };
