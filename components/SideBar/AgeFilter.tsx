@@ -14,55 +14,44 @@ import {
   SliderFilledTrack,
   SliderThumb,
 } from '@gluestack-ui/themed';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
-const AgeFilter = ({ onFilterChange }) => {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [minAge, setMinAge] = useState(18);
-  const [maxAge, setMaxAge] = useState(60);
-  const [gender, setGender] = useState<string>('male'); // Change to a single string value
-  const [ageRange, setAgeRange] = useState<string>('18-25');
+import useFilterStore from './../FilterStore'
 
-  useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserId(user.uid);
-      } else {
-        setUserId(null);
-      }
-    });
+const AgeFilter = () => {
+  // Accessing Zustand store values and actions
+  const {
+    minAge,
+    maxAge,
+    gender,
+    ageRange,
+    setMinAge,
+    setMaxAge,
+    setGender,
+    setAgeRange,
+  } = useFilterStore();
 
-    // Clean up the subscription on unmount
-    return () => unsubscribe();
-  }, []);
-
-  const handleSliderChange = (min: number, max: number) => {
+  const handleSliderChange = (min, max) => {
     setMinAge(min);
     setMaxAge(max);
-    onFilterChange({ minAge: min, maxAge: max, gender, ageRange });
   };
 
-  const handleAgeRangeChange = (value: string) => {
+  const handleAgeRangeChange = (value) => {
     setAgeRange(value);
-    const selectedRange = ageRangeOptions.find(
-      (option) => option.label === value
-    );
+    const selectedRange = ageRangeOptions.find((option) => option.label === value);
     if (selectedRange) {
       const [min, max] = selectedRange.range;
-      handleSliderChange(min, max); // Update minAge and maxAge
+      handleSliderChange(min, max); // Update minAge and maxAge in the store
     }
   };
 
-  const handleGenderChange = (value: string) => {
+  const handleGenderChange = (value) => {
     setGender(value);
-    onFilterChange({ minAge, maxAge, gender: value, ageRange });
   };
 
   const genderOptions = [
     { label: 'Men', value: 'male' },
     { label: 'Women', value: 'female' },
-    { label: 'Non-binary', value: 'other' },
+    { label: 'other', value: 'other' },
   ];
 
   const ageRangeOptions = [

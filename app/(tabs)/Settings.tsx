@@ -35,11 +35,12 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
+  Image,
 } from '@gluestack-ui/themed';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { useWindowDimensions, Image, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { get, ref, update, remove } from 'firebase/database'; // Firebase Database imports
 import {
   FIREBASE_DB,
@@ -58,10 +59,12 @@ import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
 import HeaderTabs from '../../components/Header/HeaderTabs';
 import Swiper from 'react-native-swiper';
 import * as ImagePicker from 'expo-image-picker';
+import useFilterStore from '../../components/FilterStore';
+import LottieView from 'lottie-react-native';
 
 export default function Settings() {
   const router = useRouter(); // Use expo-router's useRouter hook
-  const { width } = useWindowDimensions();
+
   const [user_auth_data, setUserAuthData] = useState(null);
   const [selectedTab, setSelectedTab] = useState('Settings');
   const [showModalUncomplite, setShowModalUncomplite] = useState(false);
@@ -94,7 +97,7 @@ export default function Settings() {
 
   const fileInputRef = useRef(null);
   const toast = useToast();
-
+  const setGender = useFilterStore((state) => state.setGender); // Get the setGender method from Zustand store
   useEffect(() => {
     const user = FIREBASE_AUTH.currentUser;
     if (user) {
@@ -114,7 +117,7 @@ export default function Settings() {
               interests: data.interests || [], // Ensure interests is always an array
               profileImages: data.profileImages || [], // Ensure profileImages is always an array
             }));
-
+            setGender(data.genderPreference); // Set the gender in the Zustand store
             checkIncompleteFields(data); // Call the function to check incomplete fields
           } else {
             console.log('No data available');
@@ -200,7 +203,7 @@ export default function Settings() {
 
           render: ({ id }) => {
             return (
-              <Toast id={id} variant="success">
+              <Toast id={id} action="success" variant="accent">
                 <ToastTitle>Image uploaded successfully!</ToastTitle>
               </Toast>
             );
@@ -213,7 +216,7 @@ export default function Settings() {
 
           render: ({ id }) => {
             return (
-              <Toast id={id} variant="error">
+              <Toast id={id} action="error" variant="accent">
                 <ToastTitle>Image upload failed. Try again!</ToastTitle>
               </Toast>
             );
@@ -262,7 +265,7 @@ export default function Settings() {
 
           render: ({ id }) => {
             return (
-              <Toast id={id} variant="success">
+              <Toast id={id} action="success" variant="accent">
                 <ToastTitle>Image deleted successfully!</ToastTitle>
               </Toast>
             );
@@ -283,7 +286,7 @@ export default function Settings() {
 
         render: ({ id }) => {
           return (
-            <Toast id={id} variant="error">
+            <Toast id={id} action="error" variant="accent">
               <ToastTitle>Failed to delete image. Try again!</ToastTitle>
             </Toast>
           );
@@ -332,9 +335,32 @@ export default function Settings() {
 
         await update(userRef, userData);
         console.log('Updated profile data in Firestore.');
+
+        toast.show({
+          placement: 'top right',
+
+          render: ({ id }) => {
+            return (
+              <Toast id={id} action="success" variant="accent">
+                <ToastTitle>Updated profile data in Firestore.</ToastTitle>
+              </Toast>
+            );
+          },
+        });
       }
     } catch (error) {
       console.error('Error updating profile data:', error);
+      toast.show({
+        placement: 'top right',
+
+        render: ({ id }) => {
+          return (
+            <Toast id={id} action="error" variant="accent">
+              <ToastTitle>Error updating profile data:</ToastTitle>
+            </Toast>
+          );
+        },
+      });
     }
   };
 
@@ -395,8 +421,58 @@ export default function Settings() {
       <KeyboardAwareScrollView
         contentContainerStyle={{ flex: 1, flexDirection: 'row' }}
       >
-        {width > 768 && (
-          <Box flex={1}>
+        <Box
+          flex={1}
+          sx={{ '@md': { display: 'flex' }, '@sm': { display: 'none' } }}
+        >
+          <Swiper
+            showsPagination
+            loop
+            style={{ width: '100%', height: '100%' }}
+            onIndexChanged={(index) => setSelectedImageIndex(index)}
+          >
+            {userData.profileImages.map((imageUri, index) => (
+              <React.Fragment key={imageUri}>
+                {' '}
+                {/* Use the imageUri as the key */}
+                <HStack width="100%">
+                  <Button
+                    m="$1"
+                    flex={1}
+                    variant="outline"
+                    onPress={() => handleDeleteImage(imageUri)}
+                  >
+                    <ButtonText fontSize="$sm" fontWeight="$medium">
+                      Delete The Image
+                    </ButtonText>
+                  </Button>
+                  <Button
+                    m="$1"
+                    flex={1}
+                    variant="outline"
+                    onPress={() => handleSetProfileImage(imageUri)}
+                  >
+                    <ButtonText fontSize="$sm" fontWeight="$medium">
+                      Set as Profile Image
+                    </ButtonText>
+                  </Button>
+                </HStack>
+                <Image
+                  source={{ uri: imageUri }}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                  alt="LoveLinnk"
+                />
+              </React.Fragment>
+            ))}
+          </Swiper>
+        </Box>
+
+        <ScrollView>
+          <Box
+            flex={1}
+            sx={{ '@md': { display: 'none' }, '@sm': { display: 'flex' } }}
+          >
             <Swiper
               showsPagination
               loop
@@ -411,21 +487,19 @@ export default function Settings() {
                     <Button
                       m="$1"
                       flex={1}
-                      variant="outline"
                       onPress={() => handleDeleteImage(imageUri)}
                     >
                       <ButtonText fontSize="$sm" fontWeight="$medium">
-                        Delete The Image
+                        Delete
                       </ButtonText>
                     </Button>
                     <Button
                       m="$1"
                       flex={1}
-                      variant="outline"
                       onPress={() => handleSetProfileImage(imageUri)}
                     >
                       <ButtonText fontSize="$sm" fontWeight="$medium">
-                        Set as Profile Image
+                        Set Profile Image
                       </ButtonText>
                     </Button>
                   </HStack>
@@ -439,52 +513,6 @@ export default function Settings() {
               ))}
             </Swiper>
           </Box>
-        )}
-
-        <ScrollView>
-          {width < 768 && (
-            <Box flex={1}>
-              <Swiper
-                showsPagination
-                loop
-                style={{ width: '100%', height: '100%' }}
-                onIndexChanged={(index) => setSelectedImageIndex(index)}
-              >
-                {userData.profileImages.map((imageUri, index) => (
-                  <React.Fragment key={imageUri}>
-                    {' '}
-                    {/* Use the imageUri as the key */}
-                    <HStack width="100%">
-                      <Button
-                        m="$1"
-                        flex={1}
-                        onPress={() => handleDeleteImage(imageUri)}
-                      >
-                        <ButtonText fontSize="$sm" fontWeight="$medium">
-                          Delete
-                        </ButtonText>
-                      </Button>
-                      <Button
-                        m="$1"
-                        flex={1}
-                        onPress={() => handleSetProfileImage(imageUri)}
-                      >
-                        <ButtonText fontSize="$sm" fontWeight="$medium">
-                          Set Profile Image
-                        </ButtonText>
-                      </Button>
-                    </HStack>
-                    <Image
-                      source={{ uri: imageUri }}
-                      style={{ width: '100%', height: '100%' }}
-                      resizeMode="cover"
-                      alt="LoveLinnk"
-                    />
-                  </React.Fragment>
-                ))}
-              </Swiper>
-            </Box>
-          )}
 
           <VStack flex={2} p="$4">
             <Box
@@ -496,7 +524,7 @@ export default function Settings() {
             >
               <Avatar mr="$4">
                 <AvatarFallbackText fontFamily="$heading">
-                  JD
+                  <Text>JD</Text>
                 </AvatarFallbackText>
                 <AvatarImage
                   source={{
@@ -510,7 +538,9 @@ export default function Settings() {
 
               <VStack>
                 <Heading size="md" fontFamily="$heading" mb="$1">
-                  {userData.name || 'Name is missing must be added'}
+                  <Text>
+                    {userData.name || 'Name is missing must be added'}
+                  </Text>
                 </Heading>
                 <Text size="sm" fontFamily="$heading">
                   {user_auth_data?.email || 'Missing email'}
@@ -520,7 +550,7 @@ export default function Settings() {
 
             <VStack mb="$4">
               <Heading size="sm" mb="$3">
-                Personal Informations
+                <Text>Personal Informations</Text>
               </Heading>
               <FormControl mb="$4">
                 <Input mb="$2">
@@ -559,7 +589,7 @@ export default function Settings() {
                 </Input>
               </FormControl>
               <Heading size="sm" mb="$3">
-                Address Information
+                <Text>Address Information</Text>
               </Heading>
               <FormControl mb="$4">
                 <Input mb="$2">
@@ -592,7 +622,7 @@ export default function Settings() {
               </FormControl>
 
               <Heading size="sm" mb="$3">
-                Your Gender
+                <Text>Your Gender</Text>
               </Heading>
               <FormControl mb="$2">
                 <Select
@@ -615,7 +645,7 @@ export default function Settings() {
                   </SelectPortal>
                 </Select>
                 <Heading size="sm" mb="$3">
-                  Looking for
+                  <Text>Looking for</Text>
                 </Heading>
                 <Select
                   value={userData.genderPreference} // Bind the selected value
@@ -647,7 +677,7 @@ export default function Settings() {
             <VStack mb="$4">
               <FormControl mb="$4">
                 <Heading size="sm" mt="$2" mb="$2">
-                  Interests
+                  <Text> Interests </Text>
                 </Heading>
                 {userData.interests.map((interest, index) => (
                   <Input key={index} mb="$1">
@@ -689,7 +719,9 @@ export default function Settings() {
         >
           <ModalContent>
             <ModalHeader>
-              <Heading size="lg">Complite your profile!!</Heading>
+              <Heading size="lg">
+                <Text>Complite your profile!!</Text>
+              </Heading>
               <ModalCloseButton></ModalCloseButton>
             </ModalHeader>
             <ModalBody>
@@ -703,7 +735,7 @@ export default function Settings() {
                 onPress={() => setShowModalUncomplite(false)} // Ensure button closes the modal
               >
                 <ButtonText fontSize="$sm" fontWeight="$medium">
-                  Close
+                  <Text>Close</Text>
                 </ButtonText>
               </Button>
             </ModalFooter>

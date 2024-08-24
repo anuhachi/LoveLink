@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import {
   Center,
@@ -47,7 +47,11 @@ import {
 } from 'lucide-react-native';
 
 //firebase imports
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'; // Import Firebase functions
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+} from 'firebase/auth'; // Import Firebase functions
 import { FIREBASE_AUTH } from './firebaseConfig'; // Import Firebase Auth
 
 import { GoogleIcon, FacebookIcon } from './assets/Icons/Social';
@@ -499,4 +503,25 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+// This component handles the auth check
+const AuthCheck = () => {
+  const auth = getAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // If user is already logged in, redirect to /Home
+        router.replace('/Home');
+      }
+    });
+
+    // Cleanup the listener when the component unmounts
+    return () => unsubscribe();
+  }, [auth, router]);
+
+  // If not authenticated, show the SignIn component
+  return <SignIn />;
+};
+
+export default AuthCheck;

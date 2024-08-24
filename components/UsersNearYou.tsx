@@ -16,6 +16,9 @@ import { ref, onValue, set, get } from 'firebase/database';
 import { FIREBASE_DB, FIREBASE_AUTH } from '../screens/Login/firebaseConfig';
 import { useRouter } from 'expo-router';
 
+import useFilterStore from './FilterStore';
+
+
 const tabsData = [
   { title: 'Explore users' },
   { title: 'Messages' },
@@ -47,6 +50,13 @@ const HomestayInformationFold = ({ filters }) => {
     profileImage: '',
     profileImages: [],
   });
+
+  // Use Zustand store for filters
+  const { minAge, maxAge, gender } = useFilterStore((state) => ({
+    minAge: state.minAge,
+    maxAge: state.maxAge,
+    gender: state.gender,
+  }));
 
   useEffect(() => {
     const usersRef = ref(FIREBASE_DB, 'users');
@@ -86,7 +96,7 @@ const HomestayInformationFold = ({ filters }) => {
       <TabPanelData
         usersList={usersList}
         currentUser={currentUser}
-        filters={filters}
+        filters={{ minAge, maxAge, gender }}
         currentUserUid={currentuseruid}
       />
     </Box>
@@ -152,8 +162,8 @@ const HomestayInfoTabs = ({ tabsData }) => {
   );
 };
 
+// Filtering logic inside TabPanelData component
 const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
-  const router = useRouter();
   const [likes, setLikes] = useState<string[]>(
     currentUser?.matches?.whoILiked || []
   );
@@ -234,6 +244,7 @@ const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
       console.error('Error updating likes:', error);
     }
   };
+  const router = useRouter();
 
   return (
     <Box

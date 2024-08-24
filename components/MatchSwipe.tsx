@@ -24,8 +24,10 @@ import {
 } from '@gluestack-ui/themed';
 import { FIREBASE_DB, FIREBASE_AUTH } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 import { ref, onValue, update, set } from 'firebase/database'; // Firebase Database imports
-import { getAuth } from 'firebase/auth'; // Firebase Auth imports
 import { onAuthStateChanged } from 'firebase/auth';
+
+
+import useFilterStore from './FilterStore'
 
 const MatchSwipe = () => {
   return (
@@ -40,9 +42,13 @@ const TabPanelData = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [currentViewedUserId, setCurrentViewedUserId] = useState<string | null>(
     null
   );
+
+  // Accessing Zustand store values
+  const { minAge, maxAge, gender, ageRange } = useFilterStore();
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(FIREBASE_AUTH, (user) => {
@@ -87,6 +93,32 @@ const TabPanelData = () => {
     return () => unsubscribeAuth();
   }, [users]);
 
+  useEffect(() => {
+    if (users.length > 0) {
+      // Apply filters to the users array
+
+      const filtered = users.filter((user) => {
+        // Example filter logic
+        const meetsAgeCriteria = user.age >= minAge && user.age <= maxAge;
+
+        const meetsGenderCriteria =
+          gender === 'other' || user.gender === gender;
+
+        return meetsAgeCriteria && meetsGenderCriteria;
+      });
+
+      setFilteredUsers(filtered);
+
+      if (filtered.length > 0) {
+        setCurrentViewedUserId(filtered[0].id);
+        setCurrentIndex(0);
+      } else {
+        setCurrentViewedUserId(null);
+        setCurrentIndex(0);
+      }
+    }
+  }, [users, minAge, maxAge, gender, ageRange]); // Re-run this effect whenever the Zustand store values change
+
   const CreateNewChat = async (userId1: string, userId2: string) => {
     try {
       // Function to generate a unique chat ID based on the user IDs
@@ -120,53 +152,53 @@ const TabPanelData = () => {
     }
   };
 
-  const handleLike = async () => {
-    if (currentUser && currentViewedUserId) {
-      try {
-        // Ensure whoILiked is treated as an array
-        const whoILiked = Array.isArray(currentUser.matches?.whoILiked)
-          ? currentUser.matches.whoILiked
-          : [];
+const handleLike = async () => {
+  if (currentUser && currentViewedUserId) {
+    try {
+      // Destructure properties with nullish fallback for arrays
+      const whoILiked = currentUser.matches?.whoILiked ?? [];
+      const userRef = ref(FIREBASE_DB, `users/${currentUser.id}/matches`);
 
-        // Update current user's whoILiked list
-        const userRef = ref(FIREBASE_DB, `users/${currentUser.id}/matches`);
-        const updatedLikes = [...whoILiked, currentViewedUserId];
-        await update(userRef, { whoILiked: updatedLikes });
+      const likedUser = users.find((user) => user.id === currentViewedUserId);
+      const whoLikedMe = likedUser?.matches?.whoLikedMe ?? [];
 
-        // Ensure whoLikedMe is treated as an array
-        const likedUser = users.find((user) => user.id === currentViewedUserId);
-        const whoLikedMe = Array.isArray(likedUser?.matches?.whoLikedMe)
-          ? likedUser.matches.whoLikedMe
-          : [];
+      // Prepare updates in one operation
+      const updates = {
+        [`users/${currentUser.id}/matches/whoILiked`]: [...whoILiked, currentViewedUserId],
+      };
 
-        // Check if the current user is already in the whoLikedMe list
-        if (!whoLikedMe.includes(currentUser.id)) {
-          // Update the liked user's whoLikedMe list
-          const likedUserRef = ref(
-            FIREBASE_DB,
-            `users/${currentViewedUserId}/matches`
-          );
-          const updatedWhoLikedMe = [...whoLikedMe, currentUser.id];
-          await update(likedUserRef, { whoLikedMe: updatedWhoLikedMe });
-        }
-
-        // Check for a mutual match
-        if (whoLikedMe.includes(currentUser.id)) {
-          // Both users have liked each other, show the modal
-          setShowModal(true);
-          CreateNewChat(currentUser.id, currentViewedUserId);
-          handleNextUser();
-        } else {
-          // Proceed to the next user if no mutual match
-          handleNextUser();
-        }
-      } catch (error) {
-        console.error('Error updating like:', error);
+      // If the current user is not already in the likedUser's whoLikedMe array, update it
+      if (!whoLikedMe.includes(currentUser.id)) {
+        updates[`users/${currentViewedUserId}/matches/whoLikedMe`] = [
+          ...whoLikedMe,
+          currentUser.id,
+        ];
       }
-    } else {
-      console.log('Current user or current viewed user ID is missing');
+
+      // Move to the next user immediately after registering the like
+      handleNextUser();
+
+      // Perform Firebase updates in the background without blocking the UI
+      const updatePromise = update(ref(FIREBASE_DB), updates);
+
+      // Check for a mutual match in the background
+      if (whoLikedMe.includes(currentUser.id)) {
+        setShowModal(true);
+        await CreateNewChat(currentUser.id, currentViewedUserId); // Assuming this is async
+      }
+
+      // Await the Firebase updates (this happens in the background)
+      await updatePromise;
+
+    } catch (error) {
+      console.error('Error updating like:', error);
     }
-  };
+  } else {
+    console.log('Current user or current viewed user ID is missing');
+  }
+};
+
+  
 
   const handleDislike = async () => {
     if (currentUser && currentViewedUserId) {
@@ -228,13 +260,13 @@ const TabPanelData = () => {
 
   return (
     <Box>
-      {users.length > 0 ? (
-        users.map((user, index) => (
+      {filteredUsers.length > 0 ? (
+        filteredUsers.map((user, index) => (
           <Box
             key={user.id}
             display={index === currentIndex ? 'block' : 'none'}
           >
-            <Card p="$3" borderRadius="$lg" maxWidth={600} m="$1">
+            <Card mt="$3" p="$3" borderRadius="$lg" maxWidth={700} m="$1">
               <Box flexDirection="row">
                 <Avatar mr="$4">
                   <AvatarFallbackText fontFamily="$heading">
@@ -286,50 +318,64 @@ const TabPanelData = () => {
                       'flexDirection': 'column',
                       '@sm': {
                         mb: '$6',
-                        flexDirection: 'row',
+                        flexDirection: 'colum',
                       },
+                      '@md': {
+                        mb: '$6',
+                        flexDirection: 'row',
+                      }
                     }}
                   >
-                    {/* First Image */}
                     <Image
                       mb="$3"
                       borderRadius="$md"
                       alt={`${user.name}'s profile image`} // Add alt prop here
                       sx={{
-                        'width': '$full',
-                        'height': 140,
+                        'width': '100%',
+                        'height': 230,
                         '@sm': {
-                          mb: '$0',
+                          mb: '$3',
                           mr: '$3',
-                          width: 200,
+                          width: 320,
                           height: 200,
+                        },
+                        '@md': {
+                          mb: '$0',
+                          mr: '$4', // Slightly larger right margin for medium screens
+                          width: 300,
+                          height: 300,
                         },
                       }}
                       source={{
                         uri: user.profileImages[0], // Display the first image in the array
                       }}
                     />
-                    {/* Second Image, if available */}
-                    {user.profileImages.length > 1 && (
+                    {user.profileImages.length > 1 ? (
                       <Image
-                        mb="$3"
+                        mb="$0"
                         borderRadius="$md"
                         alt={`${user.name}'s profile image`} // Add alt prop here
                         sx={{
                           'width': '$full',
-                          'height': 140,
+                          'height': 230,
                           '@sm': {
                             mb: '$0',
                             mr: '$3',
-                            width: 200,
+                            width: 320,
                             height: 200,
+                          },
+                          '@md': {
+                            mb: '$0',
+                            mr: '$4', // Slightly larger right margin for medium screens
+                            width: 300,
+                            height: 300,
                           },
                         }}
                         source={{
                           uri: user.profileImages[1], // Display the second image in the array
                         }}
                       />
-                    )}
+                    ) : (<></>) }
                   </Box>
                 ) : (
                   <Image

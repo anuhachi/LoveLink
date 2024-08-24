@@ -28,7 +28,7 @@ import {
 } from '@gluestack-ui/themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { useWindowDimensions, Image } from 'react-native';
+import { Image, ScrollView } from 'react-native';
 import { get, ref } from 'firebase/database'; // Firebase Database imports
 import { FIREBASE_DB } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 import { useLocalSearchParams } from 'expo-router'; // Import from expo-router
@@ -38,7 +38,6 @@ import HeaderTabs from '../../components/Header/HeaderTabs';
 import Swiper from 'react-native-swiper';
 
 export default function UserProfileDash() {
-  const { width } = useWindowDimensions();
   const [selectedTab, setSelectedTab] = useState('null');
   const params = useLocalSearchParams();
   const userId = params.id;
@@ -130,138 +129,132 @@ export default function UserProfileDash() {
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1, flexDirection: 'row' }}
       >
-        {width > 768 && (
-          <Box flex={1}>
-            <Swiper
-              showsPagination
-              autoplay
-              loop
-              style={{ width: '100%', height: '100%' }}
-            >
-              {userData.profileImages.map((imageUri, index) => (
-                <Image
-                  key={index}
-                  source={{ uri: imageUri }}
-                  style={{ width: '100%', height: '100%' }}
-                  resizeMode="cover"
-                  alt="LoveLinnk"
-                />
-              ))}
-            </Swiper>
-          </Box>
-        )}
-
-        <VStack flex={2} p="$4">
-          <Box
-            bg="$primary100"
-            p="$5"
-            flexDirection="row"
-            mb="$4"
-            borderRadius="$md"
+        <Box
+          flex={1}
+          display="none"
+          sx={{ '@md': { display: 'flex' }, '@sm': { display: 'none' } }}
+        >
+          <Swiper
+            showsPagination
+            autoplay
+            loop
+            style={{ width: '100%', height: '100%' }}
           >
-            <Avatar mr="$4">
-              <AvatarFallbackText fontFamily="$heading">JD</AvatarFallbackText>
-              <AvatarImage
-                source={{
-                  uri:
-                    userData.profileImage || 'https://via.placeholder.com/150',
-                }}
+            {userData.profileImages.map((imageUri, index) => (
+              <Image
+                key={index}
+                source={{ uri: imageUri }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+                alt="LoveLinnk"
               />
-              <AvatarBadge bg="green.500" />
-            </Avatar>
-            <VStack>
-              <Heading size="md" fontFamily="$heading" mb="$1">
-                {userData.name || 'Jane Doe'}
-              </Heading>
-              <Text size="sm" fontFamily="$heading">
-                {userData.email || 'Missing email'}
-              </Text>
-            </VStack>
-          </Box>
+            ))}
+          </Swiper>
+        </Box>
 
-          <VStack mb="$4">
-            <Heading size="sm" mb="$3">
-              Personal Information
-            </Heading>
-            <FormControl mb="$4">
-              <Input>
-                <InputField placeholder="Email" value={userData.email} />
-              </Input>
-            </FormControl>
-            <FormControl mb="$4">
-              <Input>
-                <InputField placeholder="Password" secureTextEntry />
-              </Input>
-            </FormControl>
-            <FormControl mb="$4">
-              <Input>
-                <InputField placeholder="Bio" value={userData.bio} />
-              </Input>
-            </FormControl>
-            <FormControl mb="$4">
-              <Input>
-                <InputField
-                  placeholder="Description"
-                  value={userData.description}
+
+        <ScrollView>
+          <VStack flex={2} p="$4">
+            <Box
+              bg="$primary100"
+              p="$5"
+              flexDirection="row"
+              mb="$4"
+              borderRadius="$md"
+            >
+              <Avatar mr="$4">
+                <AvatarFallbackText fontFamily="$heading">
+                  JD
+                </AvatarFallbackText>
+                <AvatarImage
+                  source={{
+                    uri:
+                      userData.profileImage ||
+                      'https://via.placeholder.com/150',
+                  }}
                 />
-              </Input>
-            </FormControl>
-          </VStack>
-
-          <VStack mb="$4">
-            <Heading size="sm" mb="$3">
-              Preferences
-            </Heading>
-            <FormControl>
-              <Input>
-                <InputField placeholder={userData.name} />
-              </Input>
-            </FormControl>
-            <FormControl mb="$3">
-              <Select>
-                <SelectTrigger>
-                  <SelectInput placeholder="Country" />
-                </SelectTrigger>
-                <SelectPortal>
-                  <SelectBackdrop />
-                  <SelectContent mb="$3">
-                    <SelectDragIndicatorWrapper>
-                      <SelectDragIndicator />
-                    </SelectDragIndicatorWrapper>
-                    <SelectItem label="India" value="India" />
-                    <SelectItem label="Sri Lanka" value="Sri Lanka" />
-                    <SelectItem label="Uganda" value="Uganda" />
-                    <SelectItem label="Japan" value="Japan" />
-                  </SelectContent>
-                </SelectPortal>
-              </Select>
-            </FormControl>
-            <FormControl mb="$4">
-              <Heading size="sm" mb="$2">
-                Interests
-              </Heading>
-              {userData.interests.map((interest, index) => (
-                <Text key={index} mb="$1">
-                  {interest}
+                <AvatarBadge bg="green.500" />
+              </Avatar>
+              <VStack>
+                <Heading size="md" fontFamily="$heading" mb="$1">
+                  {userData.name || 'Jane Doe'}
+                </Heading>
+                <Text size="sm" fontFamily="$heading">
+                  {userData.email || 'Missing email'}
                 </Text>
-              ))}
-            </FormControl>
-            <FormControl mb="$3">
-              <Button bg="$darkBlue600">
-                <ButtonText fontSize="$sm" fontWeight="$medium">
-                  Update your profile Data
-                </ButtonText>
-              </Button>
-            </FormControl>
-            <FormControl>
-              <Button bg="$darkBlue600">
-                <ButtonText fontSize="$sm" fontWeight="$medium">
-                  Logout
-                </ButtonText>
-              </Button>
-            </FormControl>
+              </VStack>
+            </Box>
+
+            <VStack mb="$4">
+              <Heading size="sm" mb="$3">
+                Personal Information
+              </Heading>
+              <FormControl mb="$4">
+                <Input>
+                  <InputField placeholder="Email" value={userData.email} />
+                </Input>
+              </FormControl>
+              <FormControl mb="$4">
+                <Input>
+                  <InputField placeholder="Password" secureTextEntry />
+                </Input>
+              </FormControl>
+              <FormControl mb="$4">
+                <Input>
+                  <InputField placeholder="Bio" value={userData.bio} />
+                </Input>
+              </FormControl>
+              <FormControl mb="$4">
+                <Input>
+                  <InputField
+                    placeholder="Description"
+                    value={userData.description}
+                  />
+                </Input>
+              </FormControl>
+            </VStack>
+
+            <VStack mb="$4">
+              <Heading size="sm" mb="$3">
+                Preferences
+              </Heading>
+              <FormControl>
+                <Input>
+                  <InputField placeholder={userData.name} />
+                </Input>
+              </FormControl>
+              <FormControl mb="$3">
+                <Select>
+                  <SelectTrigger>
+                    <SelectInput placeholder="Country" />
+                  </SelectTrigger>
+                  <SelectPortal>
+                    <SelectBackdrop />
+                    <SelectContent mb="$3">
+                      <SelectDragIndicatorWrapper>
+                        <SelectDragIndicator />
+                      </SelectDragIndicatorWrapper>
+                      <SelectItem label="India" value="India" />
+                      <SelectItem label="Sri Lanka" value="Sri Lanka" />
+                      <SelectItem label="Uganda" value="Uganda" />
+                      <SelectItem label="Japan" value="Japan" />
+                    </SelectContent>
+                  </SelectPortal>
+                </Select>
+              </FormControl>
+              <FormControl mb="$4">
+                <Heading size="sm" mb="$2">
+                  Interests
+                </Heading>
+                {userData.interests.map((interest, index) => (
+                  <Text key={index} mb="$1">
+                    {interest}
+                  </Text>
+                ))}
+              </FormControl>
+            </VStack>
           </VStack>
-        </VStack>
+        </ScrollView>
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );

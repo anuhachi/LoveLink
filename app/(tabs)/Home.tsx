@@ -97,7 +97,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
       </Box>
       <Fab
         bg="$indigo600"
-        height="$9"
+        height="$15"
         position="absolute"
         bottom="$6"
         right="$4"

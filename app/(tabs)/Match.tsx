@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { StyleSheet, ScrollView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Avatar,
   AvatarBadge,
@@ -29,6 +30,7 @@ import {
   Toast,
   ToastTitle,
   useToast,
+  Image,
   ModalCloseButton,
 } from '@gluestack-ui/themed';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -41,7 +43,7 @@ import HeaderTabs from '../../components/Header/HeaderTabs';
 import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
 import NewLikesSection from '../../components/NewLikesSection';
 import MainContentHeader from '../../components/MainContentHeader';
-import { useWindowDimensions, Image, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { get, ref, update, remove } from 'firebase/database'; // Firebase Database imports
@@ -51,8 +53,19 @@ export default function Tab({ activeTab, setActiveTab }: any) {
   const [user, setUser] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  const [filters, setFilters] = useState({
+    minAge: 18,
+    maxAge: 60,
+    genderValues: ['male', 'female', 'other'],
+    ageRange: '18-25',
+  });
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
   const router = useRouter(); // Use expo-router's useRouter hook
-  const { width } = useWindowDimensions();
+
   const [user_auth_data, setUserAuthData] = useState(null);
   const [userData, setUserData] = useState({
     address: {
@@ -118,6 +131,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <Box w="100%" sx={{ display: 'flex' }}>
+    
         <Box
           px="$16"
           w="100%"
@@ -142,6 +156,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
               setSelectedTab={setSelectedTab}
               selectedTab={selectedTab}
             />
+            
             <HStack space="lg" alignItems="center" pr="$1.5">
               <UserProfile />
             </HStack>
@@ -151,16 +166,17 @@ export default function Tab({ activeTab, setActiveTab }: any) {
       <KeyboardAwareScrollView
         contentContainerStyle={{ flex: 1, flexDirection: 'row' }}
       >
-        {width > 768 && (
-          <Box flex={1}>
-            <Sidebar />
+      
+          <Box flex={1} display="none" sx={{ '@lg': { display: 'flex' }, '@sm': { display: 'none' } }} >
+            <Sidebar onFilterChange={handleFilterChange} />
           </Box>
-        )}
+ 
 
         <ScrollView>
           <VStack flex={2} p="$4">
             <VStack mb="$4">
               <MatchSwipe />
+              
             </VStack>
           </VStack>
         </ScrollView>

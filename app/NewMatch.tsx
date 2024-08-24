@@ -35,7 +35,6 @@ import MatchSwipe from '../components/MatchSwipe';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { useWindowDimensions, Image, Platform } from 'react-native';
 import { get, ref, update, remove } from 'firebase/database'; // Firebase Database imports
 import {
   FIREBASE_DB,
@@ -55,9 +54,9 @@ import HeaderTabs from '../components/Header/HeaderTabs';
 import Swiper from 'react-native-swiper';
 import * as ImagePicker from 'expo-image-picker';
 
-export default function Tab({ activeTab, setActiveTab }: any) {
+export default function Tab({ filters }: any) {
   const router = useRouter(); // Use expo-router's useRouter hook
-  const { width } = useWindowDimensions();
+
   const [user_auth_data, setUserAuthData] = useState(null);
   const [selectedTab, setSelectedTab] = useState('Settings');
   const [userData, setUserData] = useState({
@@ -157,16 +156,16 @@ export default function Tab({ activeTab, setActiveTab }: any) {
       <KeyboardAwareScrollView
         contentContainerStyle={{ flex: 1, flexDirection: 'row' }}
       >
-        {width > 768 && (
-          <Box flex={1}>
-            <Sidebar />
+      
+          <Box flex={1} flex={1} display="none" sx={{ '@lg': { display: 'flex' }, '@sm': { display: 'none' } }} >
+            <Sidebar onFilterChange={handleFilterChange} />
           </Box>
-        )}
+    
 
         <ScrollView>
           <VStack flex={2} p="$4">
             <VStack mb="$4">
-              <MatchSwipe />
+              <MatchSwipe filters={filters} />
             </VStack>
           </VStack>
         </ScrollView>

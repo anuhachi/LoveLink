@@ -6,7 +6,7 @@ import {
 } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { SplashScreen, Stack } from 'expo-router';
-import { useColorScheme, useWindowDimensions } from 'react-native';
+import { useColorScheme} from 'react-native';
 
 import { useState, useEffect } from 'react';
 

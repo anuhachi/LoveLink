@@ -15,6 +15,7 @@ import {
   Button,
   Select,
   FormControl,
+  Image,
 } from '@gluestack-ui/themed';
 import HeaderTabs from '../../components/Header/HeaderTabs';
 import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
@@ -22,12 +23,11 @@ import UserProfile from '../../components/Header/UserProfile';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { useWindowDimensions, Image } from 'react-native';
 import { get, ref, onValue } from 'firebase/database'; // Firebase Database imports
 import { FIREBASE_DB, FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 
 export default function Tab() {
-  const { width } = useWindowDimensions();
+
   const [selectedTab, setSelectedTab] = useState('Messages');
 
   const [user_auth_data, setUserAuthData] = useState(null);
@@ -106,8 +106,15 @@ export default function Tab() {
         contentContainerStyle={{ flexGrow: 1, flexDirection: 'row' }}
       >
         {/* Sidebar: Only visible on screens wider than 768px */}
-        {width > 768 && (
-          <Box flex={1}>
+     
+          <Box
+            flex={1}
+            display="none"
+            sx={{
+              '@md': { display: 'flex' },
+              '@sm': { display: 'none' },
+            }}
+          >
             <Image
               source={{
                 uri: 'https://images.unsplash.com/photo-1620403724159-40363e84a155?q=80&w=2646&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
@@ -117,7 +124,7 @@ export default function Tab() {
               alt="LoveLinnk"
             />
           </Box>
-        )}
+       
 
         {/* Main content */}
         <VStack flex={2} p="$4">
