@@ -18,15 +18,14 @@ import { useRouter } from 'expo-router';
 
 import useFilterStore from './FilterStore';
 
-
 const tabsData = [
   { title: 'Explore users' },
-  { title: 'Messages' },
   { title: 'Liked You' },
   { title: 'Nearby' },
   { title: 'Favorites' },
   { title: 'Visitors' },
   { title: 'Preferences' },
+  { title: 'Messages' },
 ];
 
 const HomestayInformationFold = ({ filters }) => {

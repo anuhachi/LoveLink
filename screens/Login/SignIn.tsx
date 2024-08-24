@@ -1,4 +1,4 @@
-import React, { useState , useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import {
   Center,
@@ -371,7 +371,7 @@ const Main = () => {
       });
 
       // Redirect to /setting
-      router.replace('/setting');
+      router.replace('/Setting');
     } catch (error) {
       // Handle errors and show error message
       toast.show({
@@ -460,15 +460,13 @@ const Main = () => {
               <ButtonIcon as={FacebookIcon} />
             </Button>
           </Link>
-          <Link href="">
-            <Button
-              action="secondary"
-              variant="link"
-              onPress={handleGoogleSignIn}
-            >
-              <ButtonIcon as={GoogleIcon} />
-            </Button>
-          </Link>
+          <Button
+            action="secondary"
+            variant="link"
+            onPress={handleGoogleSignIn}
+          >
+            <ButtonIcon as={GoogleIcon} />
+          </Button>
         </HStack>
         <HStack
           space="xs"

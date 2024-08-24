@@ -204,7 +204,9 @@ export default function Settings() {
           render: ({ id }) => {
             return (
               <Toast id={id} action="success" variant="accent">
-                <ToastTitle>Image uploaded successfully!</ToastTitle>
+                <ToastTitle>
+                  <Text>Image uploaded successfully!</Text>
+                </ToastTitle>
               </Toast>
             );
           },
@@ -217,7 +219,9 @@ export default function Settings() {
           render: ({ id }) => {
             return (
               <Toast id={id} action="error" variant="accent">
-                <ToastTitle>Image upload failed. Try again!</ToastTitle>
+                <ToastTitle>
+                  <Text>Image upload failed. Try again!</Text>
+                </ToastTitle>
               </Toast>
             );
           },
@@ -236,7 +240,9 @@ export default function Settings() {
           render: ({ id }) => {
             return (
               <Toast id={id} variant="accent" action="warning">
-                <ToastTitle>You cannot delete the last image left</ToastTitle>
+                <ToastTitle>
+                  <Text>You cannot delete the last image left</Text>
+                </ToastTitle>
               </Toast>
             );
           },
@@ -266,7 +272,9 @@ export default function Settings() {
           render: ({ id }) => {
             return (
               <Toast id={id} action="success" variant="accent">
-                <ToastTitle>Image deleted successfully!</ToastTitle>
+                <ToastTitle>
+                  <Text>Image deleted successfully!</Text>
+                </ToastTitle>
               </Toast>
             );
           },
@@ -287,7 +295,9 @@ export default function Settings() {
         render: ({ id }) => {
           return (
             <Toast id={id} action="error" variant="accent">
-              <ToastTitle>Failed to delete image. Try again!</ToastTitle>
+              <ToastTitle>
+                <Text>Failed to delete image. Try again!</Text>
+              </ToastTitle>
             </Toast>
           );
         },
@@ -342,7 +352,9 @@ export default function Settings() {
           render: ({ id }) => {
             return (
               <Toast id={id} action="success" variant="accent">
-                <ToastTitle>Updated profile data in Firestore.</ToastTitle>
+                <ToastTitle>
+                  <Text>Updated profile data in Firestore.</Text>
+                </ToastTitle>
               </Toast>
             );
           },
@@ -356,7 +368,9 @@ export default function Settings() {
         render: ({ id }) => {
           return (
             <Toast id={id} action="error" variant="accent">
-              <ToastTitle>Error updating profile data:</ToastTitle>
+              <ToastTitle>
+                <Text>Error updating profile data:</Text>
+              </ToastTitle>
             </Toast>
           );
         },
@@ -433,7 +447,6 @@ export default function Settings() {
           >
             {userData.profileImages.map((imageUri, index) => (
               <React.Fragment key={imageUri}>
-                {' '}
                 {/* Use the imageUri as the key */}
                 <HStack width="100%">
                   <Button
@@ -443,7 +456,7 @@ export default function Settings() {
                     onPress={() => handleDeleteImage(imageUri)}
                   >
                     <ButtonText fontSize="$sm" fontWeight="$medium">
-                      Delete The Image
+                      <Text> Delete The Image</Text>
                     </ButtonText>
                   </Button>
                   <Button
@@ -453,7 +466,7 @@ export default function Settings() {
                     onPress={() => handleSetProfileImage(imageUri)}
                   >
                     <ButtonText fontSize="$sm" fontWeight="$medium">
-                      Set as Profile Image
+                      <Text>Set as Profile Image</Text>
                     </ButtonText>
                   </Button>
                 </HStack>
@@ -481,7 +494,6 @@ export default function Settings() {
             >
               {userData.profileImages.map((imageUri, index) => (
                 <React.Fragment key={imageUri}>
-                  {' '}
                   {/* Use the imageUri as the key */}
                   <HStack width="100%">
                     <Button
@@ -499,7 +511,7 @@ export default function Settings() {
                       onPress={() => handleSetProfileImage(imageUri)}
                     >
                       <ButtonText fontSize="$sm" fontWeight="$medium">
-                        Set Profile Image
+                         Set Profile Image
                       </ButtonText>
                     </Button>
                   </HStack>
@@ -735,7 +747,7 @@ export default function Settings() {
                 onPress={() => setShowModalUncomplite(false)} // Ensure button closes the modal
               >
                 <ButtonText fontSize="$sm" fontWeight="$medium">
-                  <Text>Close</Text>
+                  Close
                 </ButtonText>
               </Button>
             </ModalFooter>

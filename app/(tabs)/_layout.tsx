@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Dimensions } from 'react-native';
+import { useWindowDimensions } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -9,7 +9,8 @@ import { Search, MessageCircle, Heart, Settings } from 'lucide-react-native'; //
 export default function TabLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const router = useRouter();
-  const [isLargeScreen, setIsLargeScreen] = useState(false);
+  const { width } = useWindowDimensions(); // Use useWindowDimensions hook
+  const isLargeScreen = width >= 768; // Adjust this value as needed
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
@@ -24,18 +25,6 @@ export default function TabLayout() {
     // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [router]);
-
-  useEffect(() => {
-    const updateScreenSize = () => {
-      const screenWidth = Dimensions.get('window').width;
-      setIsLargeScreen(screenWidth >= 768); // Adjust this value as needed
-    };
-
-    updateScreenSize(); // Initial check
-    Dimensions.addEventListener('change', updateScreenSize); // Listen to screen size changes
-
-    return () => Dimensions.removeEventListener('change', updateScreenSize);
-  }, []);
 
   if (isAuthenticated === null) {
     return null; // Optionally show a loading spinner while checking authentication state
