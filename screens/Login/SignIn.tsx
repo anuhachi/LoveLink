@@ -371,7 +371,7 @@ const Main = () => {
       });
 
       // Redirect to /setting
-      router.replace('/Setting');
+      router.replace('/Settings');
     } catch (error) {
       // Handle errors and show error message
       toast.show({
@@ -386,7 +386,7 @@ const Main = () => {
       });
 
       // Redirect to /setting even in case of an error
-      router.replace('/Setting');
+      router.replace('/Settings');
     }
   };
 
