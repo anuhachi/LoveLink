@@ -386,7 +386,7 @@ const Main = () => {
       });
 
       // Redirect to /setting even in case of an error
-      router.replace('/setting');
+      router.replace('/Setting');
     }
   };
 
