@@ -31,6 +31,7 @@ const tabsData = [
 const HomestayInformationFold = ({ filters }) => {
   const [usersList, setUsersList] = useState<any[]>([]);
   const [currentuseruid, setCurrentUserUid] = useState<any>(null);
+  const [likes, setLikes] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>({
     address: { city: '', street: '', zip: '' },
     age: '',
@@ -58,36 +59,59 @@ const HomestayInformationFold = ({ filters }) => {
   }));
 
   useEffect(() => {
-    const usersRef = ref(FIREBASE_DB, 'users');
+    const fetchData = async () => {
+      const usersRef = ref(FIREBASE_DB, 'users');
 
-    const unsubscribe = onValue(usersRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        const usersArray = Object.values(data);
-        setUsersList(usersArray);
+      const unsubscribe = onValue(usersRef, async (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const usersArray = Object.values(data);
+          setUsersList(usersArray);
 
-        const uid = FIREBASE_AUTH.currentUser?.uid;
-        setCurrentUserUid(uid);
+          const uid = FIREBASE_AUTH.currentUser?.uid;
+          setCurrentUserUid(uid);
 
-        const currentUserRef = ref(FIREBASE_DB, `users/${uid}`);
-        get(currentUserRef)
-          .then((userSnapshot) => {
-            if (userSnapshot.exists()) {
-              setCurrentUser(userSnapshot.val());
-            } else {
-              console.log('No current user data found.');
+          if (uid) {
+            try {
+              const currentUserRef = ref(FIREBASE_DB, `users/${uid}`);
+              const userSnapshot = await get(currentUserRef);
+
+              if (userSnapshot.exists()) {
+                const userData = userSnapshot.val();
+                setCurrentUser(userData);
+
+                // Fetch likes for the current user after setting currentUser
+                const userLikesRef = ref(
+                  FIREBASE_DB,
+                  `users/${uid}/matches/whoILiked`
+                );
+                const likesSnapshot = await get(userLikesRef);
+
+                if (likesSnapshot.exists()) {
+                  const likesData = likesSnapshot.val();
+                  console.log('likesdata in the useeffect', likesData);
+                  setLikes(likesData); // Now you can safely set likes
+                }
+              } else {
+                console.log('No current user data found.');
+              }
+            } catch (error) {
+              console.error('Error fetching data:', error);
             }
-          })
-          .catch((error) => {
-            console.error('Error fetching current user:', error);
-          });
-      }
-    });
+          }
+        }
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    };
+
+    fetchData();
   }, []);
 
-  if (!currentUser) return null;
+  if (!currentUser) {
+    console.log('No current user found');
+    return null;
+  }
 
   return (
     <Box pb="$8" px="$4" sx={{ '@md': { px: 0 } }}>
@@ -97,6 +121,8 @@ const HomestayInformationFold = ({ filters }) => {
         currentUser={currentUser}
         filters={{ minAge, maxAge, gender }}
         currentUserUid={currentuseruid}
+        likes={likes} // Pass likes here
+        setLikes={setLikes} // Pass setLikes function here
       />
     </Box>
   );
@@ -162,10 +188,14 @@ const HomestayInfoTabs = ({ tabsData }) => {
 };
 
 // Filtering logic inside TabPanelData component
-const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
-  const [likes, setLikes] = useState<string[]>(
-    currentUser?.matches?.whoILiked || []
-  );
+const TabPanelData = ({
+  usersList,
+  currentUser,
+  filters,
+  currentUserUid,
+  likes,
+  setLikes,
+}) => {
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
 
   const filterUsers = useCallback(
@@ -183,6 +213,8 @@ const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
 
   useEffect(() => {
     const fetchLikes = async () => {
+      console.log('Fetching likes...', currentUser); // Add this to check if it's called
+
       if (currentUser) {
         const { minAge = 18, maxAge = 60, gender } = filters || {};
         if (minAge > maxAge) return;
@@ -198,6 +230,7 @@ const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
 
         if (snapshot.exists()) {
           const likesData = snapshot.val();
+          console.log('likesdata in the useeffect', likesData);
           setLikes(likesData || []);
         }
       }
@@ -244,6 +277,74 @@ const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
     }
   };
   const router = useRouter();
+  console.log('yooooooo', likes);
+
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    // Check if any of the inputs are undefined, null, or not numbers
+    if (
+      [lat1, lon1, lat2, lon2].some(
+        (value) => value === undefined || value === null || isNaN(value)
+      )
+    ) {
+      return 0; // Return 0 if there is an error in the input values
+    }
+  
+    const toRadians = (angle) => (angle * Math.PI) / 180;
+  
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+  
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRadians(lat1)) *
+        Math.cos(toRadians(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+  
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  
+    const distance = R * c; // Distance in kilometers
+  
+    return distance;
+  };
+  
+
+  const LikeButton = ({ profileId, likes, handleLikePress }) => (
+    <Pressable
+      onPress={() => handleLikePress(profileId)}
+      position="absolute"
+      top={12}
+      right={16}
+      h="$6"
+      w="$6"
+      justifyContent="center"
+      alignItems="center"
+    >
+      <AnimatePresence>
+        <Motion.View
+          key={likes.includes(profileId) ? 'liked' : 'unliked'}
+          initial={{ scale: 1.3 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0.9 }}
+          transition={{
+            type: 'spring',
+            mass: 0.9,
+            damping: 9,
+            stiffness: 300,
+          }}
+          style={{ position: 'absolute' }}
+        >
+          <Icon
+            as={Heart}
+            size="lg"
+            color={likes.includes(profileId) ? 'red' : 'white'}
+            fill={likes.includes(profileId) ? 'red' : 'gray'}
+          />
+        </Motion.View>
+      </AnimatePresence>
+    </Pressable>
+  );
 
   return (
     <Box
@@ -300,39 +401,12 @@ const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
               </>
             )}
           </Pressable>
-          <Pressable
-            onPress={() => handleLikePress(profile.id)}
-            position="absolute"
-            top={12}
-            right={16}
-            h="$6"
-            w="$6"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <AnimatePresence>
-              <Motion.View
-                key={likes.includes(profile.id) ? 'liked' : 'unliked'}
-                initial={{ scale: 1.3 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.9 }}
-                transition={{
-                  type: 'spring',
-                  mass: 0.9,
-                  damping: 9,
-                  stiffness: 300,
-                }}
-                style={{ position: 'absolute' }}
-              >
-                <Icon
-                  as={Heart}
-                  size="lg"
-                  color={likes.includes(profile.id) ? 'red' : 'white'}
-                  fill={likes.includes(profile.id) ? 'red' : 'gray'}
-                />
-              </Motion.View>
-            </AnimatePresence>
-          </Pressable>
+          <LikeButton
+            profileId={profile.id}
+            likes={likes}
+            handleLikePress={handleLikePress}
+          />
+
           <HStack
             justifyContent="space-between"
             py="$2"
@@ -351,7 +425,14 @@ const TabPanelData = ({ usersList, currentUser, filters, currentUserUid }) => {
                 color="$textLight500"
                 sx={{ _dark: { color: '$textDark500' } }}
               >
-                {profile.location}
+                {profile.location},{' '}
+                {calculateDistance(
+                  profile.address.latitude,
+                  profile.address.longitude,
+                  currentUser.address.latitude,
+                  currentUser.address.longitude
+                ).toFixed(1)}{' '}
+                km away
               </Text>
               <Text
                 size="sm"

@@ -64,10 +64,11 @@ import LottieView from 'lottie-react-native';
 
 export default function Settings() {
   const router = useRouter(); // Use expo-router's useRouter hook
-
   const [user_auth_data, setUserAuthData] = useState(null);
   const [selectedTab, setSelectedTab] = useState('Settings');
   const [showModalUncomplite, setShowModalUncomplite] = useState(false);
+  const [newInterest, setNewInterest] = useState('');
+
   const [userData, setUserData] = useState({
     address: {
       city: '', // Add default or user-provided values
@@ -82,6 +83,7 @@ export default function Settings() {
     hobby: '',
     interests: [],
     location: '',
+
     matches: {
       whoILiked: [],
       whoLikedMe: [],
@@ -335,6 +337,31 @@ export default function Settings() {
     }
   };
 
+  const fetchCoordinates = async (address) => {
+    const { city, street, zip } = address;
+    const query = `${street}, ${city}, ${zip}`;
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+          query
+        )}&format=json&limit=1`
+      );
+      const data = await response.json();
+
+      if (data.length > 0) {
+        return { latitude: data[0].lat, longitude: data[0].lon };
+      } else {
+        console.log('No coordinates found for the given address.');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching coordinates:', error);
+      return null;
+    }
+  };
+
+  // Function to update profile data
   // Function to update profile data
   const updateProfileData = async () => {
     try {
@@ -342,6 +369,14 @@ export default function Settings() {
       if (user) {
         const uid = user.uid;
         const userRef = ref(FIREBASE_DB, `/users/${uid}`);
+
+        // Fetch coordinates based on the address entered
+        const coordinates = await fetchCoordinates(userData.address);
+
+        if (coordinates) {
+          userData.address.latitude = coordinates.latitude;
+          userData.address.longitude = coordinates.longitude;
+        }
 
         await update(userRef, userData);
         console.log('Updated profile data in Firestore.');
@@ -379,10 +414,15 @@ export default function Settings() {
   };
 
   const handleInputChange = (fieldName, value) => {
-    console.log('Field:', fieldName, 'Value:', value);
     const fields = fieldName.split('.');
     setUserData((prevState) => {
       if (fields.length > 1) {
+        // Handling for array elements, e.g., "interests.0"
+        if (fields[0] === 'interests') {
+          const updatedInterests = [...prevState.interests];
+          updatedInterests[parseInt(fields[1], 10)] = value;
+          return { ...prevState, interests: updatedInterests };
+        }
         return {
           ...prevState,
           [fields[0]]: {
@@ -511,7 +551,7 @@ export default function Settings() {
                       onPress={() => handleSetProfileImage(imageUri)}
                     >
                       <ButtonText fontSize="$sm" fontWeight="$medium">
-                         Set Profile Image
+                        Set Profile Image
                       </ButtonText>
                     </Button>
                   </HStack>
@@ -689,19 +729,50 @@ export default function Settings() {
             <VStack mb="$4">
               <FormControl mb="$4">
                 <Heading size="sm" mt="$2" mb="$2">
-                  <Text> Interests </Text>
+                  <Text>Interests</Text>
                 </Heading>
-                {userData.interests.map((interest, index) => (
-                  <Input key={index} mb="$1">
-                    <InputField
-                      placeholder="Your interests"
-                      value={interest}
-                      onChangeText={(text) =>
-                        handleInputChange('interests', text)
-                      }
-                    />
-                  </Input>
-                ))}
+                {userData.interests.length === 0 ? (
+                  <Text mb="$2">
+                    No interests added. Please add your interests below:
+                  </Text>
+                ) : (
+                  userData.interests.map((interest, index) => (
+                    <Input key={index} mb="$1">
+                      <InputField
+                        placeholder="Your interest"
+                        value={interest}
+                        onChangeText={(text) =>
+                          handleInputChange(`interests.${index}`, text)
+                        }
+                      />
+                    </Input>
+                  ))
+                )}
+                {/* Add a new input field for adding a new interest */}
+                {userData.interests.length < 3 ? (
+                  <>
+                    <Input mb="$1">
+                      <InputField
+                        placeholder="Add a new interest"
+                        value={newInterest} // Handle the value of the new interest
+                        onChangeText={(text) => setNewInterest(text)} // Update the state for the new interest
+                      />
+                    </Input>
+                    <Button
+                      onPress={() => {
+                        if (newInterest) {
+                          handleInputChange('interests', [
+                            ...userData.interests,
+                            newInterest,
+                          ]);
+                          setNewInterest(''); // Clear the input field after adding
+                        }
+                      }}
+                    >
+                      <ButtonText>Add Interest</ButtonText>
+                    </Button>
+                  </>
+                ) : null}
               </FormControl>
 
               <Button mb="$2" bg="$darkBlue600" onPress={pickImage}>

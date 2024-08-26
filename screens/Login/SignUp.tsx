@@ -40,9 +40,14 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Keyboard } from 'react-native';
 
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'; // Import Firebase functions
-import { FIREBASE_AUTH } from './firebaseConfig'; // Import Firebase Auth
-import { getDatabase, ref, set } from 'firebase/database'; // Import Realtime Database functions
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from 'firebase/auth'; // Import Firebase functions
+import { FIREBASE_AUTH, FIREBASE_DB } from './firebaseConfig'; // Import Firebase Auth
+import { ref, set } from 'firebase/database'; // Import Realtime Database functions
 
 import { FacebookIcon, GoogleIcon } from './assets/Icons/Social';
 
@@ -190,6 +195,7 @@ const SignUpForm = () => {
           },
           age: '', // Default or user-provided value
           bio: '',
+          id: uid, // Add user_auth_data UID
           description: '',
           gender: '',
           genderPreference: '',
@@ -258,6 +264,7 @@ const SignUpForm = () => {
     Keyboard.dismiss();
     handleSubmit(onSubmit)();
   };
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const handleState = () => {
@@ -269,6 +276,85 @@ const SignUpForm = () => {
     setShowConfirmPassword((showState) => {
       return !showState;
     });
+  };
+
+  // Add this function to handle Google Sign-In
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(FIREBASE_AUTH, provider);
+
+      // Google access token can be used for further integration if needed
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+      const user = result.user;
+
+      // Initialize Realtime Database reference
+
+      const userRef = ref(FIREBASE_DB, 'users/' + user.uid);
+
+      // Define user data according to the specified structure
+      const userData = {
+        address: {
+          city: '',
+          street: '',
+          zip: '',
+        },
+        age: '',
+        bio: '',
+        description: '',
+        gender: '',
+        genderPreference: '',
+        hobby: '',
+        interests: [],
+        location: '',
+        id: user.uid,
+        matches: {
+          whoILiked: [0],
+          whoLikedMe: [0],
+        },
+        messages: [],
+        name: user.displayName || '', // Use the name from Google profile
+        profilecomplete: false,
+        DOB: false,
+        profileImage: user.photoURL || `https://robohash.org/${user.uid}`, // Use the Google profile image or fallback
+        profileImages: [
+          user.photoURL || `https://robohash.org/${user.uid}`, // Example of additional images
+        ],
+      };
+
+      // Set user data in Realtime Database
+      await set(userRef, userData);
+
+      // Handle success - show a success message
+      toast.show({
+        placement: 'bottom right',
+        render: ({ id }) => (
+          <Toast id={id} variant="accent" action="success">
+            <ToastTitle>Signed in with Google successfully</ToastTitle>
+          </Toast>
+        ),
+      });
+
+      // Redirect to /setting
+      router.replace('/Settings');
+    } catch (error) {
+      // Handle errors and show error message
+      toast.show({
+        placement: 'bottom right',
+        render: ({ id }) => (
+          <Toast id={id} variant="accent" action="error">
+            <ToastTitle>
+              {error.message || 'An error occurred during Google sign-in'}
+            </ToastTitle>
+          </Toast>
+        ),
+      });
+
+      // Redirect to /setting even in case of an error
+      router.replace('/Settings');
+    }
   };
 
   return (
@@ -553,11 +639,14 @@ function SignUpFormComponent() {
               <ButtonIcon as={FacebookIcon} />
             </Button>
           </Link>
-          <Link href="">
-            <Button action="secondary" variant="link" onPress={() => {}}>
-              <ButtonIcon as={GoogleIcon} size="md" />
-            </Button>
-          </Link>
+
+          <Button
+            action="secondary"
+            variant="link"
+            onPress={handleGoogleSignIn}
+          >
+            <ButtonIcon as={GoogleIcon} size="md" />
+          </Button>
         </HStack>
 
         <HStack
