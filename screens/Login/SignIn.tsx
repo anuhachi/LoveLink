@@ -361,43 +361,6 @@ const Main = () => {
       const token = credential?.accessToken;
       const user = result.user;
 
-      // Initialize Realtime Database reference
-
-      const userRef = ref(FIREBASE_DB, 'users/' + user.uid);
-
-      // Define user data according to the specified structure
-      const userData = {
-        address: {
-          city: '',
-          street: '',
-          zip: '',
-        },
-        age: '',
-        bio: '',
-        description: '',
-        gender: '',
-        genderPreference: '',
-        hobby: '',
-        interests: [],
-        location: '',
-        id: user.uid,
-        matches: {
-          whoILiked: [0],
-          whoLikedMe: [0],
-        },
-        messages: [],
-        name: user.displayName || '', // Use the name from Google profile
-        profilecomplete: false,
-        DOB: false,
-        profileImage: user.photoURL || `https://robohash.org/${user.uid}`, // Use the Google profile image or fallback
-        profileImages: [
-          user.photoURL || `https://robohash.org/${user.uid}`, // Example of additional images
-        ],
-      };
-
-      // Set user data in Realtime Database
-      await set(userRef, userData);
-
       // Handle success - show a success message
       toast.show({
         placement: 'bottom right',
