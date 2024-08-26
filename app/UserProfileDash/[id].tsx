@@ -9,28 +9,12 @@ import {
   Box,
   Text,
   Heading,
-  Input,
-  Button,
-  Select,
-  ButtonText,
-  SelectPortal,
-  FormControl,
-  SelectItem,
-  SelectBackdrop,
-  SelectTrigger,
-  SelectInput,
-  SelectContent,
-  SelectIcon,
-  Icon,
-  InputField,
-  SelectDragIndicatorWrapper,
-  SelectDragIndicator,
+  Image,
 } from '@gluestack-ui/themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { Image, ScrollView } from 'react-native';
 import { get, ref } from 'firebase/database'; // Firebase Database imports
-import { FIREBASE_DB } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
+import { FIREBASE_DB, FIREBASE_AUTH } from '../../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 import { useLocalSearchParams } from 'expo-router'; // Import from expo-router
 import UserProfile from '../../components/Header/UserProfile';
 import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
@@ -41,7 +25,6 @@ export default function UserProfileDash() {
   const [selectedTab, setSelectedTab] = useState('null');
   const params = useLocalSearchParams();
   const userId = params.id;
-  console.log(userId);
 
   const [userData, setUserData] = useState({
     name: '',
@@ -58,15 +41,46 @@ export default function UserProfileDash() {
     interests: [],
   });
 
+  const [loggedUserInterests, setLoggedUserInterests] = useState([]);
+  const [isPerfectMatch, setIsPerfectMatch] = useState(false);
+  const [interestMatchCount, setInterestMatchCount] = useState(0);
+
+
+  // Fetch logged-in user data
+  useEffect(() => {
+    const user = FIREBASE_AUTH.currentUser;
+    if (user) {
+      const uid = user.uid;
+
+      const loggedUserRef = ref(FIREBASE_DB, `/users/${uid}`);
+
+      get(loggedUserRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            setLoggedUserInterests(data.interests || []);
+          } else {
+            console.log('No data available for logged-in user');
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching logged-in user data:', error);
+        });
+    } else {
+      console.log('No user is signed in.');
+    }
+  }, []);
+
+  // Fetch viewed user data
   useEffect(() => {
     if (userId) {
       const userRef = ref(FIREBASE_DB, `/users/${userId}`);
-
+  
       get(userRef)
         .then((snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.val();
-            console.log(data);
+            const interests = data.interests || [];
             setUserData({
               name: data.name || '',
               email: data.email || '',
@@ -79,8 +93,20 @@ export default function UserProfileDash() {
               description: data.description || '',
               profileImage: data.profileImage || '',
               profileImages: data.profileImages || [],
-              interests: data.interests || [],
+              interests: interests,
             });
+  
+            // Count the number of matching interests
+            const matchingInterests = interests.filter(interest =>
+              loggedUserInterests.includes(interest)
+            );
+  
+            setInterestMatchCount(matchingInterests.length);
+  
+            // Check if all interests match
+            const allInterestsMatch = interests.length === loggedUserInterests.length &&
+              interests.every(interest => loggedUserInterests.includes(interest));
+            setIsPerfectMatch(allInterestsMatch);
           } else {
             console.log('No data available');
           }
@@ -91,7 +117,8 @@ export default function UserProfileDash() {
     } else {
       console.log('No user ID provided.');
     }
-  }, [userId]);
+  }, [userId, loggedUserInterests]);
+  
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -129,132 +156,150 @@ export default function UserProfileDash() {
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1, flexDirection: 'row' }}
       >
-        <Box
-          flex={1}
+        {userData.profileImages.length > 0 && (
+          <Box flex={1}  flex={1}
           display="none"
-          sx={{ '@md': { display: 'flex' }, '@sm': { display: 'none' } }}
-        >
-          <Swiper
-            showsPagination
-            autoplay
-            loop
-            style={{ width: '100%', height: '100%' }}
-          >
-            {userData.profileImages.map((imageUri, index) => (
-              <Image
-                key={index}
-                source={{ uri: imageUri }}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-                alt="LoveLinnk"
-              />
-            ))}
-          </Swiper>
-        </Box>
-
-
-        <ScrollView>
-          <VStack flex={2} p="$4">
-            <Box
-              bg="$primary100"
-              p="$5"
-              flexDirection="row"
-              mb="$4"
-              borderRadius="$md"
+          sx={{ '@md': { display: 'flex' }, '@sm': { display: 'none' } }}>
+            <Swiper
+              showsPagination
+              autoplay
+              loop
+              style={{ width: '100%', height: '100%' }}
             >
-              <Avatar mr="$4">
-                <AvatarFallbackText fontFamily="$heading">
-                  JD
-                </AvatarFallbackText>
-                <AvatarImage
-                  source={{
-                    uri:
-                      userData.profileImage ||
-                      'https://via.placeholder.com/150',
-                  }}
+              {userData.profileImages.map((imageUri, index) => (
+                <Image
+                  key={index}
+                  source={{ uri: imageUri }}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
                 />
-                <AvatarBadge bg="green.500" />
-              </Avatar>
-              <VStack>
-                <Heading size="md" fontFamily="$heading" mb="$1">
-                  {userData.name || 'Jane Doe'}
-                </Heading>
-                <Text size="sm" fontFamily="$heading">
-                  {userData.email || 'Missing email'}
+              ))}
+            </Swiper>
+          </Box>
+        )}
+
+        <VStack flex={2} p="$4">
+          <Box
+            bg="$primary200" // Updated color for reference box
+            p="$5"
+            flexDirection="row"
+            mb="$4"
+            borderRadius="$md"
+            borderColor="$primary300"
+            borderWidth={1}
+          >
+            <Avatar mr="$4">
+              <AvatarFallbackText fontFamily="$heading">JD</AvatarFallbackText>
+              <AvatarImage
+                source={{
+                  uri:
+                    userData.profileImage || 'https://via.placeholder.com/150',
+                }}
+              />
+              <AvatarBadge bg="$green.500" />
+            </Avatar>
+            <VStack>
+              <Heading size="md" fontFamily="$heading" mb="$1">
+                {userData.name || 'Jane Doe'}
+              </Heading>
+              {isPerfectMatch ? (
+                <Text
+                  size="md"
+                  fontFamily="$heading"
+                  color="green" // Color for "Perfect Match" text
+                  fontWeight="bold"
+                  textAlign="center"
+                  mb="$2"
+                >
+                  Perfect Match
                 </Text>
-              </VStack>
+              ) : (
+                <Text
+                  size="md"
+                  fontFamily="$heading"
+                  color={interestMatchCount > 0 ? 'green' : 'red'} // Color based on matches
+                  fontWeight={interestMatchCount === 0 ? 'bold' : 'normal'}
+                  textAlign="center"
+                  mb="$2"
+                >
+                  {interestMatchCount === 0 && 'No common interests.'}
+                  {interestMatchCount === 1 && '1 interest in common.'}
+                  {interestMatchCount === 2 && '2 interests in common.'}
+                </Text>
+              )}
+              {userData.email && (
+                <Text size="sm" fontFamily="$heading">
+                  {userData.email}
+                </Text>
+              )}
+            </VStack>
+          </Box>
+
+          {userData.bio && (
+            <Box
+              bg="$primary100" // Lighter color
+              p="$4"
+              borderRadius="$md"
+              borderColor="$primary300"
+              borderWidth={1}
+              mb="$4"
+            >
+              <Heading size="sm" mb="$2">
+                Bio
+              </Heading>
+              <Text>{userData.bio}</Text>
             </Box>
+          )}
 
-            <VStack mb="$4">
-              <Heading size="sm" mb="$3">
-                Personal Information
+          {userData.description && (
+            <Box
+              bg="$primary100" // Lighter color
+              p="$4"
+              borderRadius="$md"
+              borderColor="$primary300"
+              borderWidth={1}
+              mb="$4"
+            >
+              <Heading size="sm" mb="$2">
+                Description
               </Heading>
-              <FormControl mb="$4">
-                <Input>
-                  <InputField placeholder="Email" value={userData.email} />
-                </Input>
-              </FormControl>
-              <FormControl mb="$4">
-                <Input>
-                  <InputField placeholder="Password" secureTextEntry />
-                </Input>
-              </FormControl>
-              <FormControl mb="$4">
-                <Input>
-                  <InputField placeholder="Bio" value={userData.bio} />
-                </Input>
-              </FormControl>
-              <FormControl mb="$4">
-                <Input>
-                  <InputField
-                    placeholder="Description"
-                    value={userData.description}
-                  />
-                </Input>
-              </FormControl>
-            </VStack>
+              <Text>{userData.description}</Text>
+            </Box>
+          )}
 
-            <VStack mb="$4">
-              <Heading size="sm" mb="$3">
-                Preferences
+          {userData.interests.length > 0 && (
+            <Box
+              bg="$primary100" // Lighter color
+              p="$4"
+              borderRadius="$md"
+              borderColor="$primary300"
+              borderWidth={1}
+              mb="$4"
+            >
+              <Heading size="sm" mb="$2">
+                Interests
               </Heading>
-              <FormControl>
-                <Input>
-                  <InputField placeholder={userData.name} />
-                </Input>
-              </FormControl>
-              <FormControl mb="$3">
-                <Select>
-                  <SelectTrigger>
-                    <SelectInput placeholder="Country" />
-                  </SelectTrigger>
-                  <SelectPortal>
-                    <SelectBackdrop />
-                    <SelectContent mb="$3">
-                      <SelectDragIndicatorWrapper>
-                        <SelectDragIndicator />
-                      </SelectDragIndicatorWrapper>
-                      <SelectItem label="India" value="India" />
-                      <SelectItem label="Sri Lanka" value="Sri Lanka" />
-                      <SelectItem label="Uganda" value="Uganda" />
-                      <SelectItem label="Japan" value="Japan" />
-                    </SelectContent>
-                  </SelectPortal>
-                </Select>
-              </FormControl>
-              <FormControl mb="$4">
-                <Heading size="sm" mb="$2">
-                  Interests
-                </Heading>
-                {userData.interests.map((interest, index) => (
-                  <Text key={index} mb="$1">
-                    {interest}
+              {userData.interests.map((interest, index) => {
+                const isCommonInterest = loggedUserInterests.includes(interest);
+                return (
+                  <Text
+                    key={index}
+                    mb="$1"
+                    color="black"
+                  >
+                    {interest}{' '}
+                    {isCommonInterest && (
+                      <Text
+                      size="sm" 
+                      fontWeight="bold"  
+                      color="green">  In common with you!</Text> // Color for match message
+                    )}
                   </Text>
-                ))}
-              </FormControl>
-            </VStack>
-          </VStack>
-        </ScrollView>
+                );
+              })}
+            </Box>
+          )}
+        </VStack>
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );
