@@ -169,7 +169,9 @@ export default function Tab() {
               chatListeners.forEach(unsubscribe => unsubscribe());
               unsubscribeUser();
             };
+          
           } else {
+            console.log("WE ARE INSIDE A IN THE ELSE")
             setChats([]);
             setSelectedChat({
               id: '',
@@ -247,7 +249,7 @@ export default function Tab() {
               {/* 1. HEADING */}
               <Box>
                 <Heading size="xl" pt="$2" pb="$3">
-                  Chats
+                  <Text>Chats</Text>
                 </Heading>
               </Box>
                 

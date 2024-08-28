@@ -17,6 +17,7 @@ import { FIREBASE_DB, FIREBASE_AUTH } from '../screens/Login/firebaseConfig';
 import { useRouter } from 'expo-router';
 
 import useFilterStore from './FilterStore';
+import { UserItem } from '../types';
 
 const tabsData = [
   { title: 'Explore users' },
@@ -25,7 +26,6 @@ const tabsData = [
   { title: 'Favorites' },
   { title: 'Visitors' },
   { title: 'Preferences' },
-  { title: 'Messages' },
 ];
 
 const HomestayInformationFold = ({ filters }) => {
@@ -199,7 +199,7 @@ const TabPanelData = ({
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
 
   const filterUsers = useCallback(
-    (users, minAge, maxAge, gender) => {
+    (users: UserItem[], minAge: number, maxAge: number, gender: string) => {
       const filtered = users.filter((user) => {
         const isInAgeRange = user.age >= minAge && user.age <= maxAge;
         const matchesGender = gender ? user.gender === gender : true;
@@ -239,12 +239,12 @@ const TabPanelData = ({
     fetchLikes();
   }, [usersList, currentUser, filters, filterUsers]);
 
-  const handleLikePress = async (profileId) => {
+  const handleLikePress = async (profileId: string) => {
     if (!profileId || !currentUserUid) return;
 
     const isLiked = likes.includes(profileId);
     const updatedLikes = isLiked
-      ? likes.filter((id) => id !== profileId)
+      ? likes.filter((id: string) => id !== profileId)
       : [...likes, profileId];
 
     try {
@@ -265,7 +265,7 @@ const TabPanelData = ({
         ? otherUserSnapshot.val()
         : [];
       const updatedOtherUserLikes = isLiked
-        ? otherUserLikes.filter((id) => id !== currentUserUid)
+        ? otherUserLikes.filter((id: string) => id !== currentUserUid)
         : [...otherUserLikes, currentUserUid];
       await set(otherUserRef, updatedOtherUserLikes);
 
@@ -279,7 +279,7 @@ const TabPanelData = ({
   const router = useRouter();
   console.log('yooooooo', likes);
 
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     // Check if any of the inputs are undefined, null, or not numbers
     if (
       [lat1, lon1, lat2, lon2].some(
@@ -289,7 +289,7 @@ const TabPanelData = ({
       return 0; // Return 0 if there is an error in the input values
     }
   
-    const toRadians = (angle) => (angle * Math.PI) / 180;
+    const toRadians = (angle: number) => (angle * Math.PI) / 180;
   
     const R = 6371; // Radius of the Earth in kilometers
     const dLat = toRadians(lat2 - lat1);
@@ -412,7 +412,7 @@ const TabPanelData = ({
             py="$2"
             alignItems="flex-start"
           >
-            <VStack space="$sm" flex={1}>
+            <VStack space="xs" flex={1}>
               <Text
                 fontWeight="$semibold"
                 color="$textLight900"

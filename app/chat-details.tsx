@@ -30,10 +30,6 @@ import { get, set, ref, onValue } from 'firebase/database';
 import { User } from 'firebase/auth'
 import { FIREBASE_DB, FIREBASE_AUTH } from '../screens/Login/firebaseConfig';
 
-type ChatDetailsProps = {
-  selectedChat: ChatItem;
-};
-
 export default function ChatDetails() {
   
   {/* 1. VARIABLES */}

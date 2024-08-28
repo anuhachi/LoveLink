@@ -158,7 +158,7 @@ export default function UserProfileDash() {
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1, flexDirection: 'row' }}
       >
-        {userData.profileImages.length > 0 && (
+        {userData.profileImages.length > 0 ? (
           <Box
             flex={1}
             display="none"
@@ -180,7 +180,7 @@ export default function UserProfileDash() {
               ))}
             </Swiper>
           </Box>
-        )}
+        ): null}
 
         <ScrollView flex={1}>
           <Box
@@ -247,27 +247,29 @@ export default function UserProfileDash() {
                   </Text>
                 ) : (
                   <Text
-                    size="md"
-                    fontFamily="$heading"
-                    color={interestMatchCount > 0 ? 'green' : 'red'} // Color based on matches
-                    fontWeight={interestMatchCount === 0 ? 'bold' : 'normal'}
-                    textAlign="center"
-                    mb="$2"
-                  >
-                    {interestMatchCount === 0 && 'No common interests.'}
-                    {interestMatchCount === 1 && '1 interest in common.'}
-                    {interestMatchCount === 2 && '2 interests in common.'}
-                  </Text>
+  size="md"
+  fontFamily="$heading"
+  color={interestMatchCount > 0 ? 'green' : 'red'} // Color based on matches
+  fontWeight={interestMatchCount === 0 ? 'bold' : 'normal'}
+  textAlign="center"
+  mb="$2"
+>
+  {interestMatchCount === 0 
+    ? 'No common interests.' 
+    : `${interestMatchCount} interest${interestMatchCount > 1 ? 's' : ''} in common.`
+  }
+</Text>
+
                 )}
-                {userData.email && (
+                {userData.email ? (
                   <Text size="sm" fontFamily="$heading">
                     {userData.email}
                   </Text>
-                )}
+                ): null}
               </VStack>
             </Box>
             <VStack>
-              {userData.bio && (
+              {userData.bio ? (
                 <Box
                   bg="$primary100" // Lighter color
                   p="$4"
@@ -277,13 +279,13 @@ export default function UserProfileDash() {
                   mb="$4"
                 >
                   <Heading size="sm" mb="$2">
-                    Bio
+                    <Text>Bio</Text>
                   </Heading>
                   <Text>{userData.bio}</Text>
                 </Box>
-              )}
+              ):null}
 
-              {userData.description && (
+              {userData.description ? (
                 <Box
                   bg="$primary100" // Lighter color
                   p="$4"
@@ -293,13 +295,13 @@ export default function UserProfileDash() {
                   mb="$4"
                 >
                   <Heading size="sm" mb="$2">
-                    Description
+                    <Text>Description</Text>
                   </Heading>
                   <Text>{userData.description}</Text>
                 </Box>
-              )}
+              ):null}
 
-              {userData.interests.length > 0 && (
+              {userData.interests.length > 0 ? (
                 <Box
                   bg="$primary100" // Lighter color
                   p="$4"
@@ -309,7 +311,7 @@ export default function UserProfileDash() {
                   mb="$4"
                 >
                   <Heading size="sm" mb="$2">
-                    Interests
+                    <Text>Interests</Text>
                   </Heading>
                   {userData.interests.map((interest, index) => {
                     const isCommonInterest =
@@ -317,17 +319,17 @@ export default function UserProfileDash() {
                     return (
                       <Text key={index} mb="$1" color="black">
                         {interest}{' '}
-                        {isCommonInterest && (
+                        {isCommonInterest ? (
                           <Text size="sm" fontWeight="bold" color="green">
                             {' '}
                             In common with you!
                           </Text> // Color for match message
-                        )}
+                        ): null}
                       </Text>
                     );
                   })}
                 </Box>
-              )}
+              ): null}
 
             </VStack>
           </VStack>

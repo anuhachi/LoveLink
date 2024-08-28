@@ -23,9 +23,9 @@ import {
   ModalCloseButton,
 } from '@gluestack-ui/themed';
 import { FIREBASE_DB, FIREBASE_AUTH } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
-import { ref, onValue, update, set } from 'firebase/database'; // Firebase Database imports
+import { ref, onValue, update, set, get } from 'firebase/database'; // Firebase Database imports
 import { onAuthStateChanged } from 'firebase/auth';
-
+import { UserItem } from '../types'
 
 import useFilterStore from './FilterStore'
 
@@ -42,7 +42,7 @@ const TabPanelData = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState<UserItem[]>([]);
   const [currentViewedUserId, setCurrentViewedUserId] = useState<string | null>(
     null
   );
@@ -131,20 +131,56 @@ const TabPanelData = () => {
 
       // Reference to the chat in the Firebase database
       const chatRef = ref(FIREBASE_DB, `chats/${chatId}`);
+      
+      // References to the users' chats in the Firebase database
+      const user1ChatsRef = ref(FIREBASE_DB, `users/${userId1}/chats`);
+      const user2ChatsRef = ref(FIREBASE_DB, `users/${userId2}/chats`);
+      
 
       // Data for the new chat
       const chatData = {
-        chatId,
-        participants: {
-          [userId1]: true,
-          [userId2]: true,
-        },
+        // Use chatId as the dynamic key
+        id: chatId,
+        lastMessage: 'It is a new match!', // Placeholder for the last message
+        lastMessageTimestamp: new Date().toISOString(),
         messages: [],
-        createdAt: new Date().toISOString(),
+        participants: [userId1, userId2],
+        participantsInfo: {
+          [userId1]: {
+            age: '31', // Placeholder values, replace with actual data
+            name: 'User 1', // Placeholder values, replace with actual data
+            profileImage: 'https://example.com/user1.jpg', // Placeholder values, replace with actual data
+          },
+          [userId2]: {
+            age: '31', // Placeholder values, replace with actual data
+            name: 'User 2', // Placeholder values, replace with actual data
+            profileImage: 'https://example.com/user2.jpg', // Placeholder values, replace with actual data
+          },
+        },
       };
 
       // Save the new chat in the database
       await set(chatRef, chatData);
+
+      // Get the current chats array for each user
+      const user1ChatsSnapshot = await get(user1ChatsRef);
+      const user2ChatsSnapshot = await get(user2ChatsRef);
+
+      // Retrieve the current chats array or initialize an empty array
+      const user1Chats = user1ChatsSnapshot.exists() ? user1ChatsSnapshot.val() : [];
+      const user2Chats = user2ChatsSnapshot.exists() ? user2ChatsSnapshot.val() : [];
+
+      // Ensure the retrieved chats are arrays (for safety)
+      const updatedUser1Chats = Array.isArray(user1Chats) ? user1Chats : [];
+      const updatedUser2Chats = Array.isArray(user2Chats) ? user2Chats : [];
+
+      // Append the new chatId to the arrays sequentially
+      updatedUser1Chats.push(chatId);
+      updatedUser2Chats.push(chatId);
+
+      // Update the users' chats arrays in the database
+      await set(user1ChatsRef, updatedUser1Chats);
+      await set(user2ChatsRef, updatedUser2Chats);
 
       console.log('New chat created successfully:', chatId);
     } catch (error) {
@@ -216,7 +252,7 @@ const TabPanelData = () => {
           // Update current user's whoILiked list by removing the disliked user
           const userRef = ref(FIREBASE_DB, `users/${currentUser.id}/matches`);
           const updatedLikes = whoILiked.filter(
-            (id) => id !== currentViewedUserId
+            (id: string) => id !== currentViewedUserId
           );
           await update(userRef, { whoILiked: updatedLikes });
         }
@@ -237,7 +273,7 @@ const TabPanelData = () => {
             `users/${currentViewedUserId}/matches`
           );
           const updatedWhoLikedMe = whoLikedMe.filter(
-            (id) => id !== currentUser.id
+            (id: string) => id !== currentUser.id
           );
           await update(dislikedUserRef, { whoLikedMe: updatedWhoLikedMe });
         }
@@ -331,7 +367,7 @@ const TabPanelData = () => {
                   >
                     <Image
                       mb="$3"
-                      borderRadius="$md"
+                      borderRadius={10}
                       alt={`${user.name}'s profile image`} // Add alt prop here
                       sx={{
                         'width': '100%',
@@ -356,7 +392,7 @@ const TabPanelData = () => {
                     {user.profileImages.length > 1 ? (
                       <Image
                         mb="$0"
-                        borderRadius="$md"
+                        borderRadius={10}
                         alt={`${user.name}'s profile image`} // Add alt prop here
                         sx={{
                           'width': '$full',
@@ -383,7 +419,7 @@ const TabPanelData = () => {
                 ) : (
                   <Image
                     mb="$3"
-                    borderRadius="$md"
+                    borderRadius={7}
                     sx={{
                       'width': '$full',
                       'height': 140,

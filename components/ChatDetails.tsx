@@ -263,6 +263,7 @@ export default function ChatDetails({ selectedChat }: ChatDetailsProps) {
       console.log('User UID:', uid); // Log the UID to the console
 
       const participantId = participants.find(id => id !== uid);
+      console.log('Participants: ', participants)
       if (participantId) {
         const participantInfo = participantsInfo[participantId];
         setCurrentParticipant(participantInfo);

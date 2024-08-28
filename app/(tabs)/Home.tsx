@@ -26,11 +26,13 @@ import HeaderTabs from '../../components/Header/HeaderTabs';
 import LoveLinkLogo from '../../components/Header/LoveLinkLogo';
 import NewLikesSection from '../../components/NewLikesSection';
 import MainContentHeader from '../../components/MainContentHeader';
+import { FilterDetailsItem } from '../../types';
+import { User } from 'firebase/auth'
 
 export default function Tab({ activeTab, setActiveTab }: any) {
   const [showModal, setShowModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Home');
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
@@ -55,11 +57,9 @@ export default function Tab({ activeTab, setActiveTab }: any) {
     ageRange: '18-25',
   });
 
-  const handleFilterChange = (newFilters) => {
+  const handleFilterChange = (newFilters: FilterDetailsItem) => {
     setFilters(newFilters);
   };
-
-  
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -97,7 +97,7 @@ export default function Tab({ activeTab, setActiveTab }: any) {
       </Box>
       <Fab
         bg="$indigo600"
-        height="$15"
+        height="$16"
         position="absolute"
         bottom="$6"
         right="$4"

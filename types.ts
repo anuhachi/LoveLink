@@ -45,7 +45,7 @@ export type MessageItem = {
   export type UserItem = {
     id: string;
     name: string;
-    age: string;
+    age: number;
     bio: string;
     description: string;
     profileImage: string;
@@ -62,11 +62,18 @@ export type MessageItem = {
     filterApplied: FilterItem;
     matches: MatchesItem;
   };
+
+  export type FilterDetailsItem = {
+    minAge: number;
+    maxAge: number;
+    genderValues: string[];
+    ageRange: string;
+  };
     
   export type ChatDetailsParams = {
     id: string;
     participants: string[];
-    participantsInfo: ParticipantInfoItem[]; 
+    participantsInfo: { [key: string]: ParticipantInfoItem }; 
     messagesReceived: MessageItem[];
     lastMessage: string;
     lastMessageTimestamp: string;
