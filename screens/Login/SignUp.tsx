@@ -479,6 +479,7 @@ const SignUpForm = () => {
 };
 
 function SignUpFormComponent() {
+  const toast = useToast();
   const handleGoogleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
