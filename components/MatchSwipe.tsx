@@ -235,6 +235,7 @@ const TabPanelData = () => {
         // Check for a mutual match
         if (whoLikedMe.includes(currentUser.id)) {
           // Both users have liked each other, show the modal
+          console.log('Mutual match!');
           setShowModal(true);
           CreateNewChat(currentUser.id, currentViewedUserId);
           handleNextUser();
