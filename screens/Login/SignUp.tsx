@@ -278,85 +278,6 @@ const SignUpForm = () => {
     });
   };
 
-  // Add this function to handle Google Sign-In
-
-  const handleGoogleSignIn = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(FIREBASE_AUTH, provider);
-
-      // Google access token can be used for further integration if needed
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const token = credential?.accessToken;
-      const user = result.user;
-
-      // Initialize Realtime Database reference
-
-      const userRef = ref(FIREBASE_DB, 'users/' + user.uid);
-
-      // Define user data according to the specified structure
-      const userData = {
-        address: {
-          city: '',
-          street: '',
-          zip: '',
-        },
-        age: '',
-        bio: '',
-        description: '',
-        gender: '',
-        genderPreference: '',
-        hobby: '',
-        interests: [],
-        location: '',
-        id: user.uid,
-        matches: {
-          whoILiked: [0],
-          whoLikedMe: [0],
-        },
-        messages: [],
-        name: user.displayName || '', // Use the name from Google profile
-        profilecomplete: false,
-        DOB: false,
-        profileImage: user.photoURL || `https://robohash.org/${user.uid}`, // Use the Google profile image or fallback
-        profileImages: [
-          user.photoURL || `https://robohash.org/${user.uid}`, // Example of additional images
-        ],
-      };
-
-      // Set user data in Realtime Database
-      await set(userRef, userData);
-
-      // Handle success - show a success message
-      toast.show({
-        placement: 'bottom right',
-        render: ({ id }) => (
-          <Toast id={id} variant="accent" action="success">
-            <ToastTitle>Signed in with Google successfully</ToastTitle>
-          </Toast>
-        ),
-      });
-
-      // Redirect to /setting
-      router.replace('/Settings');
-    } catch (error) {
-      // Handle errors and show error message
-      toast.show({
-        placement: 'bottom right',
-        render: ({ id }) => (
-          <Toast id={id} variant="accent" action="error">
-            <ToastTitle>
-              {error.message || 'An error occurred during Google sign-in'}
-            </ToastTitle>
-          </Toast>
-        ),
-      });
-
-      // Redirect to /setting even in case of an error
-      router.replace('/Settings');
-    }
-  };
-
   return (
     <>
       <VStack justifyContent="space-between">
@@ -558,6 +479,82 @@ const SignUpForm = () => {
 };
 
 function SignUpFormComponent() {
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(FIREBASE_AUTH, provider);
+
+      // Google access token can be used for further integration if needed
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+      const user = result.user;
+
+      // Initialize Realtime Database reference
+
+      const userRef = ref(FIREBASE_DB, 'users/' + user.uid);
+
+      // Define user data according to the specified structure
+      const userData = {
+        address: {
+          city: '',
+          street: '',
+          zip: '',
+        },
+        age: '',
+        bio: '',
+        description: '',
+        gender: '',
+        genderPreference: '',
+        hobby: '',
+        interests: [],
+        location: '',
+        id: user.uid,
+        matches: {
+          whoILiked: [0],
+          whoLikedMe: [0],
+        },
+        messages: [],
+        name: user.displayName || '', // Use the name from Google profile
+        profilecomplete: false,
+        DOB: false,
+        profileImage: user.photoURL || `https://robohash.org/${user.uid}`, // Use the Google profile image or fallback
+        profileImages: [
+          user.photoURL || `https://robohash.org/${user.uid}`, // Example of additional images
+        ],
+      };
+
+      // Set user data in Realtime Database
+      await set(userRef, userData);
+
+      // Handle success - show a success message
+      toast.show({
+        placement: 'bottom right',
+        render: ({ id }) => (
+          <Toast id={id} variant="accent" action="success">
+            <ToastTitle>Signed in with Google successfully</ToastTitle>
+          </Toast>
+        ),
+      });
+
+      // Redirect to /setting
+      router.replace('/Settings');
+    } catch (error) {
+      // Handle errors and show error message
+      toast.show({
+        placement: 'bottom right',
+        render: ({ id }) => (
+          <Toast id={id} variant="accent" action="error">
+            <ToastTitle>
+              {error.message || 'An error occurred during Google sign-in'}
+            </ToastTitle>
+          </Toast>
+        ),
+      });
+
+      // Redirect to /setting even in case of an error
+      router.replace('/Settings');
+    }
+  };
   return (
     <>
       <Box
