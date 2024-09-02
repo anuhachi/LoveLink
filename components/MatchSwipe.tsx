@@ -25,9 +25,9 @@ import {
 import { FIREBASE_DB, FIREBASE_AUTH } from '../screens/Login/firebaseConfig'; // Adjust the import path as necessary
 import { ref, onValue, update, set, get } from 'firebase/database'; // Firebase Database imports
 import { onAuthStateChanged } from 'firebase/auth';
-import { UserItem } from '../types'
+import { UserItem } from '../types';
 
-import useFilterStore from './FilterStore'
+import useFilterStore from './FilterStore';
 
 const MatchSwipe = () => {
   return (
@@ -96,28 +96,25 @@ const TabPanelData = () => {
   useEffect(() => {
     if (users.length > 0) {
       // Apply filters to the users array
-
       const filtered = users.filter((user) => {
         // Example filter logic
         const meetsAgeCriteria = user.age >= minAge && user.age <= maxAge;
-
         const meetsGenderCriteria =
           gender === 'other' || user.gender === gender;
-
         return meetsAgeCriteria && meetsGenderCriteria;
       });
 
       setFilteredUsers(filtered);
 
       if (filtered.length > 0) {
-        setCurrentViewedUserId(filtered[0].id);
         setCurrentIndex(0);
+        setCurrentViewedUserId(filtered[0].id); // Update to first filtered user
       } else {
         setCurrentViewedUserId(null);
         setCurrentIndex(0);
       }
     }
-  }, [users, minAge, maxAge, gender, ageRange]); // Re-run this effect whenever the Zustand store values change
+  }, [users, minAge, maxAge, gender, ageRange]);
 
   const CreateNewChat = async (userId1: string, userId2: string) => {
     try {
@@ -131,11 +128,10 @@ const TabPanelData = () => {
 
       // Reference to the chat in the Firebase database
       const chatRef = ref(FIREBASE_DB, `chats/${chatId}`);
-      
+
       // References to the users' chats in the Firebase database
       const user1ChatsRef = ref(FIREBASE_DB, `users/${userId1}/chats`);
       const user2ChatsRef = ref(FIREBASE_DB, `users/${userId2}/chats`);
-      
 
       // Data for the new chat
       const chatData = {
@@ -167,8 +163,12 @@ const TabPanelData = () => {
       const user2ChatsSnapshot = await get(user2ChatsRef);
 
       // Retrieve the current chats array or initialize an empty array
-      const user1Chats = user1ChatsSnapshot.exists() ? user1ChatsSnapshot.val() : [];
-      const user2Chats = user2ChatsSnapshot.exists() ? user2ChatsSnapshot.val() : [];
+      const user1Chats = user1ChatsSnapshot.exists()
+        ? user1ChatsSnapshot.val()
+        : [];
+      const user2Chats = user2ChatsSnapshot.exists()
+        ? user2ChatsSnapshot.val()
+        : [];
 
       // Ensure the retrieved chats are arrays (for safety)
       const updatedUser1Chats = Array.isArray(user1Chats) ? user1Chats : [];
@@ -189,24 +189,29 @@ const TabPanelData = () => {
   };
 
   const handleLike = async () => {
+    console.log('Current user:', currentUser);
+    console.log('Current viewed user ID:', currentViewedUserId);
+
     if (currentUser && currentViewedUserId) {
+      console.log('Current user:', currentUser);
+      console.log('Current viewed user ID:', currentViewedUserId);
       try {
         // Ensure whoILiked is treated as an array
         const whoILiked = Array.isArray(currentUser.matches?.whoILiked)
           ? currentUser.matches.whoILiked
           : [];
-  
+
         // Update current user's whoILiked list
         const userRef = ref(FIREBASE_DB, `users/${currentUser.id}/matches`);
         const updatedLikes = [...whoILiked, currentViewedUserId];
         await update(userRef, { whoILiked: updatedLikes });
-  
+
         // Ensure whoLikedMe is treated as an array
         const likedUser = users.find((user) => user.id === currentViewedUserId);
         const whoLikedMe = Array.isArray(likedUser?.matches?.whoLikedMe)
           ? likedUser.matches.whoLikedMe
           : [];
-  
+
         // Check if the current user is already in the whoLikedMe list
         if (!whoLikedMe.includes(currentUser.id)) {
           // Update the liked user's whoLikedMe list
@@ -217,7 +222,7 @@ const TabPanelData = () => {
           const updatedWhoLikedMe = [...whoLikedMe, currentUser.id];
           await update(likedUserRef, { whoLikedMe: updatedWhoLikedMe });
         }
-  
+
         // Check for a mutual match
         if (whoLikedMe.includes(currentUser.id)) {
           // Both users have liked each other, show the modal
@@ -235,9 +240,6 @@ const TabPanelData = () => {
       console.log('Current user or current viewed user ID is missing');
     }
   };
-  
-
-  
 
   const handleDislike = async () => {
     if (currentUser && currentViewedUserId) {
@@ -289,11 +291,12 @@ const TabPanelData = () => {
 
   const handleNextUser = () => {
     const nextIndex = currentIndex + 1;
-    if (nextIndex < users.length) {
+    if (nextIndex < filteredUsers.length) {
       setCurrentIndex(nextIndex);
-      setCurrentViewedUserId(users[nextIndex].id);
+      setCurrentViewedUserId(filteredUsers[nextIndex].id); // Sync with filtered users
     } else {
-      setCurrentIndex(users.length); // Set index to out-of-bound value to show "No more users"
+      setCurrentIndex(filteredUsers.length); // Set index to out-of-bound value to show "No more users"
+      setCurrentViewedUserId(null); // Handle end of user list
     }
   };
 
@@ -362,7 +365,7 @@ const TabPanelData = () => {
                       '@md': {
                         mb: '$6',
                         flexDirection: 'row',
-                      }
+                      },
                     }}
                   >
                     <Image
@@ -414,7 +417,9 @@ const TabPanelData = () => {
                           uri: user.profileImages[1], // Display the second image in the array
                         }}
                       />
-                    ) : (<></>) }
+                    ) : (
+                      <></>
+                    )}
                   </Box>
                 ) : (
                   <Image
