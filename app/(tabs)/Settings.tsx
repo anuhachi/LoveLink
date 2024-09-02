@@ -602,7 +602,7 @@ export default function Settings() {
 
             <VStack mb="$4">
               <Heading size="sm" mb="$3">
-                <Text>Personal Informations</Text>
+                <Text bold="true">Personal Information</Text>
               </Heading>
               <FormControl mb="$4">
                 <Input mb="$2">
@@ -648,7 +648,7 @@ export default function Settings() {
                 </Input>
               </FormControl>
               <Heading size="sm" mb="$3">
-                <Text>Address Information</Text>
+                <Text bold="true">Address Information</Text>
               </Heading>
               <FormControl mb="$4">
                 <Input mb="$2">
@@ -681,7 +681,7 @@ export default function Settings() {
               </FormControl>
 
               <Heading size="sm" mb="$3">
-                <Text>Your Gender</Text>
+                <Text bold="true">Your Gender</Text>
               </Heading>
               <FormControl mb="$2">
                 <Select
@@ -704,7 +704,7 @@ export default function Settings() {
                   </SelectPortal>
                 </Select>
                 <Heading size="sm" mb="$3">
-                  <Text>Looking for</Text>
+                  <Text bold="true">Looking for</Text>
                 </Heading>
                 <Select
                   value={userData.genderPreference} // Bind the selected value
@@ -736,7 +736,7 @@ export default function Settings() {
             <VStack mb="$4">
               <FormControl mb="$4">
                 <Heading size="sm" mt="$2" mb="$2">
-                  <Text>Interests</Text>
+                  <Text bold="true">Interests</Text>
                 </Heading>
                 {userData.interests.length === 0 ? (
                   <Text mb="$2">
