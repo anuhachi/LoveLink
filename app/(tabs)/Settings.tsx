@@ -614,7 +614,7 @@ export default function Settings() {
                 </Input>
                 <Input mb="$2">
                   <InputField
-                    placeholder="name"
+                    placeholder="Enter your age"
                     value={userData.age}
                     onChangeText={(text) => handleInputChange('age', text)}
                   />
