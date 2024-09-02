@@ -184,7 +184,7 @@ export default function UserProfileDash() {
 
         <ScrollView flex={1}>
           <Box
-            flex={1}
+            flex={2}
             sx={{ '@lg': { display: 'none' }, '@sm': { display: 'flex' } }}
           >
             <Swiper
