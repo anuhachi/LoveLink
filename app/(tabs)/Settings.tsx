@@ -612,6 +612,13 @@ export default function Settings() {
                     onChangeText={(text) => handleInputChange('name', text)}
                   />
                 </Input>
+                <Input mb="$2">
+                  <InputField
+                    placeholder="name"
+                    value={userData.age}
+                    onChangeText={(text) => handleInputChange('age', age)}
+                  />
+                </Input>
                 <Input>
                   <InputField
                     placeholder="Bio"
