@@ -425,7 +425,7 @@ const TabPanelData = ({
                 color="$textLight500"
                 sx={{ _dark: { color: '$textDark500' } }}
               >
-                {profile.location},{' '}
+                {profile.address.city},{' '}
                 {calculateDistance(
                   profile.address.latitude,
                   profile.address.longitude,

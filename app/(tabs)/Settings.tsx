@@ -616,7 +616,7 @@ export default function Settings() {
                   <InputField
                     placeholder="name"
                     value={userData.age}
-                    onChangeText={(text) => handleInputChange('age', age)}
+                    onChangeText={(text) => handleInputChange('age', text)}
                   />
                 </Input>
                 <Input>

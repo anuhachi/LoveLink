@@ -518,9 +518,9 @@ function SignUpFormComponent() {
         name: user.displayName || '', // Use the name from Google profile
         profilecomplete: false,
         DOB: false,
-        profileImage: user.photoURL || `https://robohash.org/${user.uid}`, // Use the Google profile image or fallback
+        profileImage: `https://robohash.org/${user.uid}`, // Use the Google profile image or fallback
         profileImages: [
-          user.photoURL || `https://robohash.org/${user.uid}`, // Example of additional images
+          `https://robohash.org/${user.uid}`, // Example of additional images
         ],
       };
 
