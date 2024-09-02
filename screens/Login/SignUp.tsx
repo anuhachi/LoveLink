@@ -183,8 +183,7 @@ const SignUpForm = () => {
         const uid = userCredential.user.uid;
 
         // Initialize Realtime Database reference
-        const db = getDatabase();
-        const userRef = ref(db, 'users/' + uid);
+        const userRef = ref(FIREBASE_DB, 'users/' + uid);
 
         // Define user data according to the specified structure
         const userData = {
@@ -233,7 +232,7 @@ const SignUpForm = () => {
         });
 
         reset();
-        router.replace('/Settings'); // Redirect to login page
+        router.push('/Settings'); // Redirect to login page
       } catch (error: any) {
         toast.show({
           placement: 'bottom right',

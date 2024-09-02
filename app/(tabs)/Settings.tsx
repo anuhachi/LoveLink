@@ -681,7 +681,7 @@ export default function Settings() {
               </FormControl>
 
               <Heading size="sm" mb="$3">
-                <Text bold="true">Your Gender</Text>
+                <Text bold="true" >Your Gender</Text>
               </Heading>
               <FormControl mb="$2">
                 <Select
@@ -736,7 +736,7 @@ export default function Settings() {
             <VStack mb="$4">
               <FormControl mb="$4">
                 <Heading size="sm" mt="$2" mb="$2">
-                  <Text bold="true">Interests</Text>
+                  <Text bold="true" >Interests</Text>
                 </Heading>
                 {userData.interests.length === 0 ? (
                   <Text mb="$2">
@@ -744,7 +744,7 @@ export default function Settings() {
                   </Text>
                 ) : (
                   userData.interests.map((interest, index) => (
-                    <Input key={index} mb="$1">
+                    <Input key={`interest-${index}`} mb="$1">
                       <InputField
                         placeholder="Your interest"
                         value={interest}
