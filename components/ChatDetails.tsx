@@ -40,11 +40,6 @@ export default function ChatDetails({ selectedChat }: ChatDetailsProps) {
   
   const participants = selectedChat.participants;
   const participantsInfo = selectedChat.participantsInfo;
-  //const messages: MessageItem[] = selectedChat.messages;
-  //const name = selectedChat.name;
-  //const isOnline = selectedChat.isOnline;
-  //const lastSeen = selectedChat.lastSeen;
-  //const profileImage = selectedChat.profileImage;
   
   {/* 2. HOOKS */}
 
@@ -186,6 +181,7 @@ export default function ChatDetails({ selectedChat }: ChatDetailsProps) {
               setMessages(messageList);
             } else {
               console.log('No messages available');
+              setMessages([]);
             }
           },
           (error) => {
@@ -263,7 +259,6 @@ export default function ChatDetails({ selectedChat }: ChatDetailsProps) {
       console.log('User UID:', uid); // Log the UID to the console
 
       const participantId = participants.find(id => id !== uid);
-      console.log('Participants: ', participants)
       if (participantId) {
         const participantInfo = participantsInfo[participantId];
         setCurrentParticipant(participantInfo);
@@ -428,8 +423,8 @@ export default function ChatDetails({ selectedChat }: ChatDetailsProps) {
               <AvatarImage
                 alt="Profile pic"
                 source={{
-                    uri: currentParticipant?.profileImage,
-                  }}
+                  uri: currentParticipant?.profileImage ?? "https://via.placeholder.com/150",
+                }}
                 style={{ width: 48, height: 48 }}
               />
               <AvatarBadge bg={onlineStatus ? "green.500" : "#DC143C"} />
@@ -438,21 +433,19 @@ export default function ChatDetails({ selectedChat }: ChatDetailsProps) {
 
             {/* 1.2 Name and Last Seen */}
             <VStack>
-              <Heading size="md" fontFamily="$heading" mb="$1">
-                {currentParticipant?.name}
-              </Heading>
+            <Heading size="md" fontFamily="$heading" mb="$1">
+              <Text fontWeight="$bold">{currentParticipant?.name ?? "Match with Someone to Chat"}</Text>
+            </Heading>
               
-              {onlineStatus && (
-                <Text size="sm" fontFamily="$heading">
-                  Online
-                </Text>
-              )}
-              {!onlineStatus && (
+            {onlineStatus ? (
+              <Text size="sm" fontFamily="$heading">Online</Text>
+            ) : (
+              lastSeen && (
                 <Text size="sm" fontFamily="$heading">
                   Last seen {formatDate(lastSeen)} at {formatTime(lastSeen)}
                 </Text>
-              )}
-              
+              )
+            )}        
             </VStack>
           </Box>
           
@@ -460,14 +453,16 @@ export default function ChatDetails({ selectedChat }: ChatDetailsProps) {
           <Box
             style={{ height: height-270-inputHeight }}
           >
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              keyExtractor={(item, index) => index.toString()}
-              contentContainerStyle={{ paddingBottom: 15 }}
-              onContentSizeChange={handleMessagesListLengthChange}
-              renderItem={renderMessageWithTimestamp}
+            {  messages && (
+              <FlatList
+                ref={flatListRef}
+                data={messages}
+                keyExtractor={(item, index) => index.toString()}
+                contentContainerStyle={{ paddingBottom: 15 }}
+                onContentSizeChange={handleMessagesListLengthChange}
+                renderItem={renderMessageWithTimestamp}
             />
+            )}
           </Box>
 
           {/* 3. TEXT INPUT */}

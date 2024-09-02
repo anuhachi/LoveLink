@@ -123,70 +123,79 @@ const TabPanelData = () => {
         const [firstId, secondId] = [userId1, userId2].sort();
         return `${firstId}_${secondId}`;
       };
-
+  
       const chatId = generateChatId(userId1, userId2);
-
+  
       // Reference to the chat in the Firebase database
       const chatRef = ref(FIREBASE_DB, `chats/${chatId}`);
-
+      
       // References to the users' chats in the Firebase database
       const user1ChatsRef = ref(FIREBASE_DB, `users/${userId1}/chats`);
       const user2ChatsRef = ref(FIREBASE_DB, `users/${userId2}/chats`);
-
+      
+      // Fetch user 1 data
+      const user1Ref = ref(FIREBASE_DB, `users/${userId1}`);
+      const user1Snapshot = await get(user1Ref);
+      const user1Data = user1Snapshot.val();
+      
+      // Fetch user 2 data
+      const user2Ref = ref(FIREBASE_DB, `users/${userId2}`);
+      const user2Snapshot = await get(user2Ref);
+      const user2Data = user2Snapshot.val();
+      
       // Data for the new chat
       const chatData = {
-        // Use chatId as the dynamic key
         id: chatId,
         lastMessage: 'It is a new match!', // Placeholder for the last message
         lastMessageTimestamp: new Date().toISOString(),
-        messages: [],
+        messages: [] as string[],
         participants: [userId1, userId2],
         participantsInfo: {
           [userId1]: {
-            age: '31', // Placeholder values, replace with actual data
-            name: 'User 1', // Placeholder values, replace with actual data
-            profileImage: 'https://example.com/user1.jpg', // Placeholder values, replace with actual data
+            age: user1Data.age,
+            name: user1Data.name,
+            profileImage: user1Data.profileImage,
           },
           [userId2]: {
-            age: '31', // Placeholder values, replace with actual data
-            name: 'User 2', // Placeholder values, replace with actual data
-            profileImage: 'https://example.com/user2.jpg', // Placeholder values, replace with actual data
+            age: user2Data.age,
+            name: user2Data.name,
+            profileImage: user2Data.profileImage,
           },
         },
       };
-
+  
       // Save the new chat in the database
       await set(chatRef, chatData);
-
+  
       // Get the current chats array for each user
       const user1ChatsSnapshot = await get(user1ChatsRef);
       const user2ChatsSnapshot = await get(user2ChatsRef);
-
+  
       // Retrieve the current chats array or initialize an empty array
-      const user1Chats = user1ChatsSnapshot.exists()
-        ? user1ChatsSnapshot.val()
-        : [];
-      const user2Chats = user2ChatsSnapshot.exists()
-        ? user2ChatsSnapshot.val()
-        : [];
-
+      const user1Chats = user1ChatsSnapshot.exists() ? user1ChatsSnapshot.val() : [];
+      const user2Chats = user2ChatsSnapshot.exists() ? user2ChatsSnapshot.val() : [];
+  
       // Ensure the retrieved chats are arrays (for safety)
       const updatedUser1Chats = Array.isArray(user1Chats) ? user1Chats : [];
       const updatedUser2Chats = Array.isArray(user2Chats) ? user2Chats : [];
-
-      // Append the new chatId to the arrays sequentially
-      updatedUser1Chats.push(chatId);
-      updatedUser2Chats.push(chatId);
-
+  
+      // Only add the chatId if it doesn't already exist in the arrays
+      if (!updatedUser1Chats.includes(chatId)) {
+        updatedUser1Chats.push(chatId);
+      }
+      if (!updatedUser2Chats.includes(chatId)) {
+        updatedUser2Chats.push(chatId);
+      }
+  
       // Update the users' chats arrays in the database
       await set(user1ChatsRef, updatedUser1Chats);
       await set(user2ChatsRef, updatedUser2Chats);
-
+  
       console.log('New chat created successfully:', chatId);
     } catch (error) {
       console.error('Error creating new chat:', error);
     }
-  };
+  };  
 
   const handleLike = async () => {
     console.log('Current user:', currentUser);
