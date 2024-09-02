@@ -22,16 +22,15 @@ import { UserItem } from '../types';
 const tabsData = [
   { title: 'Explore users' },
   { title: 'Liked You' },
-  { title: 'Nearby' },
   { title: 'Favorites' },
-  { title: 'Visitors' },
-  { title: 'Preferences' },
+  { title: 'Nearby' },
 ];
 
 const HomestayInformationFold = ({ filters }) => {
   const [usersList, setUsersList] = useState<any[]>([]);
   const [currentuseruid, setCurrentUserUid] = useState<any>(null);
   const [likes, setLikes] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState(tabsData[0]); // Add state for activeTab
   const [currentUser, setCurrentUser] = useState<any>({
     address: { city: '', street: '', zip: '' },
     age: '',
@@ -115,7 +114,11 @@ const HomestayInformationFold = ({ filters }) => {
 
   return (
     <Box pb="$8" px="$4" sx={{ '@md': { px: 0 } }}>
-      <HomestayInfoTabs tabsData={tabsData} />
+      <HomestayInfoTabs
+        tabsData={tabsData}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
       <TabPanelData
         usersList={usersList}
         currentUser={currentUser}
@@ -123,14 +126,13 @@ const HomestayInformationFold = ({ filters }) => {
         currentUserUid={currentuseruid}
         likes={likes} // Pass likes here
         setLikes={setLikes} // Pass setLikes function here
+        activeTab={activeTab} // Pass activeTab to TabPanelData
       />
     </Box>
   );
 };
 
-const HomestayInfoTabs = ({ tabsData }) => {
-  const [activeTab, setActiveTab] = useState(tabsData[0]);
-
+const HomestayInfoTabs = ({ tabsData, activeTab, setActiveTab }) => {
   return (
     <Box
       borderBottomWidth={1}
@@ -164,7 +166,7 @@ const HomestayInfoTabs = ({ tabsData }) => {
                     },
                   },
                 }}
-                onPress={() => setActiveTab(tab)}
+                onPress={() => setActiveTab(tab)} // Update activeTab on press
               >
                 <Text
                   size="sm"
@@ -195,20 +197,34 @@ const TabPanelData = ({
   currentUserUid,
   likes,
   setLikes,
+  activeTab, // Add activeTab as a prop
 }) => {
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
 
   const filterUsers = useCallback(
     (users: UserItem[], minAge: number, maxAge: number, gender: string) => {
-      const filtered = users.filter((user) => {
-        const isInAgeRange = user.age >= minAge && user.age <= maxAge;
-        const matchesGender = gender ? user.gender === gender : true;
-        const isNotCurrentUser = user.id !== currentUser.id;
-        return isInAgeRange && matchesGender && isNotCurrentUser;
-      });
+      let filtered = users;
+
+      // If "Liked You" tab is selected, filter users who have liked the current user
+      if (activeTab.title === 'Liked You') {
+        filtered = users.filter((user) =>
+          currentUser.matches.whoLikedMe.includes(user.id)
+        );
+      } else if (activeTab.title === 'Favorites') {
+        // Filter users who the current user has liked
+        filtered = users.filter((user) => likes.includes(user.id));
+      } else {
+        filtered = users.filter((user) => {
+          const isInAgeRange = user.age >= minAge && user.age <= maxAge;
+          const matchesGender = gender ? user.gender === gender : true;
+          const isNotCurrentUser = user.id !== currentUser.id;
+          return isInAgeRange && matchesGender && isNotCurrentUser;
+        });
+      }
+
       setFilteredUsers(filtered);
     },
-    [currentUser]
+    [currentUser, activeTab] // Add activeTab to the dependency array
   );
 
   useEffect(() => {
@@ -279,7 +295,12 @@ const TabPanelData = ({
   const router = useRouter();
   console.log('yooooooo', likes);
 
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const calculateDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) => {
     // Check if any of the inputs are undefined, null, or not numbers
     if (
       [lat1, lon1, lat2, lon2].some(
@@ -288,27 +309,26 @@ const TabPanelData = ({
     ) {
       return 0; // Return 0 if there is an error in the input values
     }
-  
+
     const toRadians = (angle: number) => (angle * Math.PI) / 180;
-  
+
     const R = 6371; // Radius of the Earth in kilometers
     const dLat = toRadians(lat2 - lat1);
     const dLon = toRadians(lon2 - lon1);
-  
+
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(toRadians(lat1)) *
         Math.cos(toRadians(lat2)) *
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
-  
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  
+
     const distance = R * c; // Distance in kilometers
-  
+
     return distance;
   };
-  
 
   const LikeButton = ({ profileId, likes, handleLikePress }) => (
     <Pressable
