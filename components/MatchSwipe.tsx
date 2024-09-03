@@ -221,7 +221,6 @@ const TabPanelData = () => {
         // Update current user's whoILiked list
         const userRef = ref(FIREBASE_DB, `users/${currentUser.id}/matches`);
         const updatedLikes = [...whoILiked, currentViewedUserId];
-        await update(userRef, { whoILiked: updatedLikes });
 
         // Ensure whoLikedMe is treated as an array
         const likedUser = users.find((user) => user.id === currentViewedUserId);
@@ -229,18 +228,19 @@ const TabPanelData = () => {
           ? likedUser.matches.whoLikedMe
           : [];
 
-        // Check if the current user is already in the whoLikedMe list
-        if (!whoLikedMe.includes(currentUser.id)) {
-          // Update the liked user's whoLikedMe list
-          const likedUserRef = ref(
-            FIREBASE_DB,
-            `users/${currentViewedUserId}/matches`
-          );
-          const updatedWhoLikedMe = [...whoLikedMe, currentUser.id];
-          await update(likedUserRef, { whoLikedMe: updatedWhoLikedMe });
-        }
+        // Update both the current user's whoILiked and liked user's whoLikedMe lists concurrently
+        const likedUserRef = ref(
+          FIREBASE_DB,
+          `users/${currentViewedUserId}/matches`
+        );
+        const updatedWhoLikedMe = [...whoLikedMe, currentUser.id];
 
-        // Check for a mutual match
+        await Promise.all([
+          update(userRef, { whoILiked: updatedLikes }),
+          update(likedUserRef, { whoLikedMe: updatedWhoLikedMe }),
+        ]);
+
+        // Check for a mutual match after both arrays are updated
         if (whoLikedMe.includes(currentUser.id)) {
           // Both users have liked each other, show the modal
           console.log('Mutual match!');
