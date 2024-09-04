@@ -207,11 +207,8 @@ const TabPanelData = () => {
   const handleLike = async () => {
     console.log('Current user:', currentUser);
     console.log('Current viewed user ID:', currentViewedUserId);
-    console.log('who liked me');
 
     if (currentUser && currentViewedUserId) {
-      console.log('Current user:', currentUser);
-      console.log('Current viewed user ID:', currentViewedUserId);
       try {
         // Ensure whoILiked is treated as an array
         const whoILiked = Array.isArray(currentUser.matches?.whoILiked)
@@ -221,6 +218,7 @@ const TabPanelData = () => {
         // Update current user's whoILiked list
         const userRef = ref(FIREBASE_DB, `users/${currentUser.id}/matches`);
         const updatedLikes = [...whoILiked, currentViewedUserId];
+        await update(userRef, { whoILiked: updatedLikes });
 
         // Ensure whoLikedMe is treated as an array
         const likedUser = users.find((user) => user.id === currentViewedUserId);
@@ -228,29 +226,36 @@ const TabPanelData = () => {
           ? likedUser.matches.whoLikedMe
           : [];
 
-        // Update both the current user's whoILiked and liked user's whoLikedMe lists concurrently
-        const likedUserRef = ref(
-          FIREBASE_DB,
-          `users/${currentViewedUserId}/matches`
-        );
-        const updatedWhoLikedMe = [...whoLikedMe, currentUser.id];
+        // Check if the current user is already in the whoLikedMe list
+        if (!whoLikedMe.includes(currentUser.id)) {
+          // Update the liked user's whoLikedMe list
+          const likedUserRef = ref(
+            FIREBASE_DB,
+            `users/${currentViewedUserId}/matches`
+          );
+          const updatedWhoLikedMe = [...whoLikedMe, currentUser.id];
+          await update(likedUserRef, { whoLikedMe: updatedWhoLikedMe });
 
-        await Promise.all([
-          update(userRef, { whoILiked: updatedLikes }),
-          update(likedUserRef, { whoLikedMe: updatedWhoLikedMe }),
-        ]);
+          // Re-fetch the updated liked user's data after updating the like
+          const updatedLikedUserSnapshot = await get(likedUserRef);
+          const updatedLikedUser = updatedLikedUserSnapshot.val();
+          const updatedWhoLikedMeList = updatedLikedUser?.whoLikedMe || [];
 
-        // Check for a mutual match after both arrays are updated
-        if (whoLikedMe.includes(currentUser.id)) {
-          // Both users have liked each other, show the modal
+          // Check for a mutual match using the updated data
+          if (updatedWhoLikedMeList.includes(currentUser.id)) {
+            console.log('Mutual match!');
+            setShowModal(true);
+            CreateNewChat(currentUser.id, currentViewedUserId);
+          }
+        } else {
+          // If already liked back, proceed to mutual match
           console.log('Mutual match!');
           setShowModal(true);
           CreateNewChat(currentUser.id, currentViewedUserId);
-          handleNextUser();
-        } else {
-          // Proceed to the next user if no mutual match
-          handleNextUser();
         }
+
+        // Proceed to the next user in both cases
+        handleNextUser();
       } catch (error) {
         console.error('Error updating like:', error);
       }
@@ -503,7 +508,7 @@ const TabPanelData = () => {
               mr="$3"
               onPress={() => {
                 setShowModal(false); // Close the modal
-                router.push('/chat'); // Navigate to the Chat screen
+                router.replace('/Chat'); // Navigate to the Chat screen
               }}
             >
               <ButtonText fontSize="$sm" fontWeight="$medium">
